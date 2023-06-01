@@ -1,0 +1,28 @@
+<launch>
+
+      <node pkg="armor" 
+            type="execute"
+            name="armor_service" 
+            args="it.emarolab.armor.ARMORMainService"
+            launch-prefix="xterm -e"
+      > </node>
+    
+      <node pkg = "exprob_robot_patrolling"  
+            type = "fsm_behaviour.py" 
+            name = "fsm_behaviour"
+            output = "screen"
+      > </node>
+    
+      <node pkg = "exprob_robot_patrolling"  
+            type = "world_generator.py"
+            name = "world_generator"
+            launch-prefix="xterm -e"
+      > </node>
+    
+      <node pkg = "exprob_robot_patrolling"  
+            type = "battery.py"
+            name = "battery_node"
+            launch-prefix="xterm -e"
+       > </node>
+
+</launch>

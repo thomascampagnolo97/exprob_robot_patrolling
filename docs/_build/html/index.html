@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Welcome to Experimental Robotics Laboratory Assignment 1: robot surveillance’s documentation! &mdash; Experimental Robotics Laboratory Assignment 1: robot surveillance 1.0 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/graphviz.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="#" class="icon icon-home"> Experimental Robotics Laboratory Assignment 1: robot surveillance
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">Welcome to Experimental Robotics Laboratory Assignment 1: robot surveillance’s documentation!</a></li>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+<li><a class="reference internal" href="#module-scripts.fsm_behaviour">Finite State Machine Module</a><ul>
+<li><a class="reference internal" href="#scripts.fsm_behaviour.Build_world"><code class="docutils literal notranslate"><span class="pre">Build_world</span></code></a><ul>
+<li><a class="reference internal" href="#scripts.fsm_behaviour.Build_world.execute"><code class="docutils literal notranslate"><span class="pre">Build_world.execute()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#scripts.fsm_behaviour.No_emergency"><code class="docutils literal notranslate"><span class="pre">No_emergency</span></code></a><ul>
+<li><a class="reference internal" href="#scripts.fsm_behaviour.No_emergency.execute"><code class="docutils literal notranslate"><span class="pre">No_emergency.execute()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#scripts.fsm_behaviour.Recharging"><code class="docutils literal notranslate"><span class="pre">Recharging</span></code></a><ul>
+<li><a class="reference internal" href="#scripts.fsm_behaviour.Recharging.execute"><code class="docutils literal notranslate"><span class="pre">Recharging.execute()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#scripts.fsm_behaviour.Surveillance"><code class="docutils literal notranslate"><span class="pre">Surveillance</span></code></a><ul>
+<li><a class="reference internal" href="#scripts.fsm_behaviour.Surveillance.execute"><code class="docutils literal notranslate"><span class="pre">Surveillance.execute()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#scripts.fsm_behaviour.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-scripts.world_generator">World Generator Module</a><ul>
+<li><a class="reference internal" href="#scripts.world_generator.build_world"><code class="docutils literal notranslate"><span class="pre">build_world()</span></code></a></li>
+<li><a class="reference internal" href="#scripts.world_generator.timestamp_computation"><code class="docutils literal notranslate"><span class="pre">timestamp_computation()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-scripts.battery">Battery Module</a><ul>
+<li><a class="reference internal" href="#scripts.battery.battery_discharge"><code class="docutils literal notranslate"><span class="pre">battery_discharge()</span></code></a></li>
+<li><a class="reference internal" href="#scripts.battery.battery_recharge"><code class="docutils literal notranslate"><span class="pre">battery_recharge()</span></code></a></li>
+<li><a class="reference internal" href="#scripts.battery.main_battery_behaviour"><code class="docutils literal notranslate"><span class="pre">main_battery_behaviour()</span></code></a></li>
+<li><a class="reference internal" href="#scripts.battery.world_callback"><code class="docutils literal notranslate"><span class="pre">world_callback()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-utilities.exprob_surveillance.state_machine_helper">Helper State Machine Module</a><ul>
+<li><a class="reference internal" href="#utilities.exprob_surveillance.state_machine_helper.Helper"><code class="docutils literal notranslate"><span class="pre">Helper</span></code></a><ul>
+<li><a class="reference internal" href="#utilities.exprob_surveillance.state_machine_helper.Helper.battery_callback"><code class="docutils literal notranslate"><span class="pre">Helper.battery_callback()</span></code></a></li>
+<li><a class="reference internal" href="#utilities.exprob_surveillance.state_machine_helper.Helper.motion_control"><code class="docutils literal notranslate"><span class="pre">Helper.motion_control()</span></code></a></li>
+<li><a class="reference internal" href="#utilities.exprob_surveillance.state_machine_helper.Helper.path_planning"><code class="docutils literal notranslate"><span class="pre">Helper.path_planning()</span></code></a></li>
+<li><a class="reference internal" href="#utilities.exprob_surveillance.state_machine_helper.Helper.robot_location"><code class="docutils literal notranslate"><span class="pre">Helper.robot_location()</span></code></a></li>
+<li><a class="reference internal" href="#utilities.exprob_surveillance.state_machine_helper.Helper.rooms_search"><code class="docutils literal notranslate"><span class="pre">Helper.rooms_search()</span></code></a></li>
+<li><a class="reference internal" href="#utilities.exprob_surveillance.state_machine_helper.Helper.set_urgency"><code class="docutils literal notranslate"><span class="pre">Helper.set_urgency()</span></code></a></li>
+<li><a class="reference internal" href="#utilities.exprob_surveillance.state_machine_helper.Helper.time_set"><code class="docutils literal notranslate"><span class="pre">Helper.time_set()</span></code></a></li>
+<li><a class="reference internal" href="#utilities.exprob_surveillance.state_machine_helper.Helper.urgency"><code class="docutils literal notranslate"><span class="pre">Helper.urgency()</span></code></a></li>
+<li><a class="reference internal" href="#utilities.exprob_surveillance.state_machine_helper.Helper.world_callback"><code class="docutils literal notranslate"><span class="pre">Helper.world_callback()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">Experimental Robotics Laboratory Assignment 1: robot surveillance</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home"></a> &raquo;</li>
+      <li>Welcome to Experimental Robotics Laboratory Assignment 1: robot surveillance’s documentation!</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="section" id="welcome-to-experimental-robotics-laboratory-assignment-1-robot-surveillance-s-documentation">
+<h1>Welcome to Experimental Robotics Laboratory Assignment 1: robot surveillance’s documentation!<a class="headerlink" href="#welcome-to-experimental-robotics-laboratory-assignment-1-robot-surveillance-s-documentation" title="Permalink to this heading"></a></h1>
+<div class="toctree-wrapper compound">
+</div>
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this heading"></a></h1>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</div>
+<div class="section" id="module-scripts.fsm_behaviour">
+<span id="finite-state-machine-module"></span><h1>Finite State Machine Module<a class="headerlink" href="#module-scripts.fsm_behaviour" title="Permalink to this heading"></a></h1>
+<span class="target" id="module-fsm_behaviour"></span><p><strong>Overview</strong></p>
+<p>The scenario involves a robot deployed in a indoor environment for surveillance purposes.
+This is finite state machine that uses the <a class="reference external" href="https://wiki.ros.org/smach">Smach tool</a> to implement it in ROS.</p>
+<dl class="simple">
+<dt>The FSM menages the surveillance behavior of the robot. It moves among locations with this policy:</dt><dd><ol class="arabic simple">
+<li><p>it should mainly stay on corridors,</p></li>
+<li><p>if a reachable room has not been visited for 20 seconds, the room become <strong>URGENT</strong> and the robot must visit it.</p></li>
+</ol>
+</dd>
+</dl>
+<p>When the robot’s battery is low, it goes in the E location, and wait for some times (recharging action in <a class="reference internal" href="#module-battery" title="battery: Python code to change the battery level (Unix)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">battery</span></code></a> node) before to
+start again with the above behaviour.</p>
+<dl class="simple">
+<dt>Publishes to:</dt><dd><p>/world_battery_sync: a Boolean flag for synchronization reasons with the <a class="reference internal" href="#module-battery" title="battery: Python code to change the battery level (Unix)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">battery</span></code></a> node. When the world is correctly loaded
+the battery’s functionality start its execution</p>
+</dd>
+<dt>Subscribes  to:</dt><dd><p>/world_loading: a Boolean flag to communicate when the map is created correctly.
+/battery_signal: a Boolean flag to communicate when battery is low and when is fully charged</p>
+</dd>
+</dl>
+<dl class="py class">
+<dt class="sig sig-object py" id="scripts.fsm_behaviour.Build_world">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scripts.fsm_behaviour.</span></span><span class="sig-name descname"><span class="pre">Build_world</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">helper</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/fsm_behaviour.html#Build_world"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.fsm_behaviour.Build_world" title="Permalink to this definition"></a></dt>
+<dd><p>Class that defines the <code class="docutils literal notranslate"><span class="pre">BUILD_WORLD</span></code> state, in which the code waits for the enviroment to be created.
+When the map is received and loaded the <code class="docutils literal notranslate"><span class="pre">world_loaded</span></code> boolean variable will be set to True, the robot will enter in
+the Corridor and the outcome <em>TRANS_WORLD_DONE</em> will make the state end to switch to the next state <code class="docutils literal notranslate"><span class="pre">NO_EMERGENCY</span></code>.</p>
+<dl class="simple">
+<dt>Args</dt><dd><p>smachState: State base interface</p>
+</dd>
+<dt>Returns</dt><dd><p>TRANS_WAITING_MAP: transition that will keep the FSM active in this state
+TRANS_WORLD_DONE: transition condition that will make this state end and go to the new next state <code class="docutils literal notranslate"><span class="pre">NO_EMERGENCY</span></code></p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="scripts.fsm_behaviour.Build_world.execute">
+<span class="sig-name descname"><span class="pre">execute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">userdata</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/fsm_behaviour.html#Build_world.execute"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.fsm_behaviour.Build_world.execute" title="Permalink to this definition"></a></dt>
+<dd><p>Called when executing a state.
+In the base class this raises a NotImplementedError.</p>
+<p>&#64;type ud: L{UserData} structure
+&#64;param ud: Userdata for the scope in which this state is executing</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="scripts.fsm_behaviour.No_emergency">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scripts.fsm_behaviour.</span></span><span class="sig-name descname"><span class="pre">No_emergency</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">helper</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/fsm_behaviour.html#No_emergency"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.fsm_behaviour.No_emergency" title="Permalink to this definition"></a></dt>
+<dd><p>Class that defines the <code class="docutils literal notranslate"><span class="pre">NO_EMERGENCY</span></code> state.
+The robot will stay in the corridors until any room becomes <strong>URGENT</strong>.</p>
+<dl class="simple">
+<dt>The logic is:</dt><dd><ul class="simple">
+<li><p>the robot will start in one corridor;</p></li>
+<li><p>if no room is URGENT, the robot stays in the corridor 3 seconds and change to the other corridor with the function <code class="docutils literal notranslate"><span class="pre">motion_control</span></code> in <a class="reference internal" href="#module-state_machine_helper" title="state_machine_helper (Unix :synopsis: Python module for the Helper of the State Machine)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">state_machine_helper</span></code></a></p></li>
+<li><p>if one or more rooms becomes <em>URGENT</em>, the FSM goes to the state <code class="docutils literal notranslate"><span class="pre">SURVEILLANCE</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+<p><strong>Important</strong>: the state gets notified by the <code class="docutils literal notranslate"><span class="pre">battery_callback</span></code> in <a class="reference internal" href="#module-battery" title="battery: Python code to change the battery level (Unix)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">battery</span></code></a> which is the callback of the topic <code class="docutils literal notranslate"><span class="pre">/battery_signal</span></code> with higher priority.
+This interrupt any other action performed in the other states.</p>
+<dl class="simple">
+<dt>Args</dt><dd><p>smachState: State base interface</p>
+</dd>
+<dt>Returns</dt><dd><p>TRANS_BATTERY_LOW: transition that change status going to the <code class="docutils literal notranslate"><span class="pre">RECHARGING</span></code>
+TRANS_URGENT_ROOM: transition that will make this state end and go to the <code class="docutils literal notranslate"><span class="pre">SURVEILLANCE</span></code>
+TRANS_NO_URGENT_ROOM: loop transition that will keep the FSM active in this state</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="scripts.fsm_behaviour.No_emergency.execute">
+<span class="sig-name descname"><span class="pre">execute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">userdata</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/fsm_behaviour.html#No_emergency.execute"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.fsm_behaviour.No_emergency.execute" title="Permalink to this definition"></a></dt>
+<dd><p>Called when executing a state.
+In the base class this raises a NotImplementedError.</p>
+<p>&#64;type ud: L{UserData} structure
+&#64;param ud: Userdata for the scope in which this state is executing</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="scripts.fsm_behaviour.Recharging">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scripts.fsm_behaviour.</span></span><span class="sig-name descname"><span class="pre">Recharging</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">helper</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/fsm_behaviour.html#Recharging"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.fsm_behaviour.Recharging" title="Permalink to this definition"></a></dt>
+<dd><p>Class that defines the <code class="docutils literal notranslate"><span class="pre">RECHARGING</span></code> state.
+The battery charge is low, advertised by <code class="docutils literal notranslate"><span class="pre">battery_callback</span></code> in <a class="reference internal" href="#module-battery" title="battery: Python code to change the battery level (Unix)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">battery</span></code></a>, which will modify the variable flag <code class="docutils literal notranslate"><span class="pre">battery_status</span></code>.</p>
+<dl class="simple">
+<dt>Args</dt><dd><p>smachState: State base interface</p>
+</dd>
+<dt>Returns</dt><dd><p>TRANS_BATTERY_CHARGED: transition that changes status, going back to the <code class="docutils literal notranslate"><span class="pre">NO_EMERGENCY</span></code> state
+TRANS_BATTERY_LOW: loop transition that will keep the FSM active in this state as long as the battery becomes fully recharged</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="scripts.fsm_behaviour.Recharging.execute">
+<span class="sig-name descname"><span class="pre">execute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">userdata</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/fsm_behaviour.html#Recharging.execute"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.fsm_behaviour.Recharging.execute" title="Permalink to this definition"></a></dt>
+<dd><p>Called when executing a state.
+In the base class this raises a NotImplementedError.</p>
+<p>&#64;type ud: L{UserData} structure
+&#64;param ud: Userdata for the scope in which this state is executing</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="scripts.fsm_behaviour.Surveillance">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scripts.fsm_behaviour.</span></span><span class="sig-name descname"><span class="pre">Surveillance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">helper</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/fsm_behaviour.html#Surveillance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.fsm_behaviour.Surveillance" title="Permalink to this definition"></a></dt>
+<dd><p>Class that defines the <code class="docutils literal notranslate"><span class="pre">SURVEILLANCE</span></code> state. Only when the <code class="docutils literal notranslate"><span class="pre">urgency_status</span></code> variable is <code class="docutils literal notranslate"><span class="pre">1</span></code> the robot must visit the urgency rooms.
+It calls the <code class="docutils literal notranslate"><span class="pre">motion_control</span></code> function in <a class="reference internal" href="#module-state_machine_helper" title="state_machine_helper (Unix :synopsis: Python module for the Helper of the State Machine)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">state_machine_helper</span></code></a> to move the robot and gets advertised by the <code class="docutils literal notranslate"><span class="pre">battery_callback</span></code> in <a class="reference internal" href="#module-battery" title="battery: Python code to change the battery level (Unix)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">battery</span></code></a> in case of low battery.</p>
+<dl class="simple">
+<dt>Args</dt><dd><p>smachState: State base interface</p>
+</dd>
+<dt>Returns</dt><dd><p>TRANS_BATTERY_LOW: transition that change status to the <code class="docutils literal notranslate"><span class="pre">RECHARGING</span></code> state
+TRANS_NO_URGENT_ROOM: transition that specifies that no other room are urgent anymore and changes status to <code class="docutils literal notranslate"><span class="pre">NO_EMERGENCY</span></code> state
+TRANS_URGENT_ROOM: loop transition that will keep the FSM active in this state</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="scripts.fsm_behaviour.Surveillance.execute">
+<span class="sig-name descname"><span class="pre">execute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">userdata</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/fsm_behaviour.html#Surveillance.execute"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.fsm_behaviour.Surveillance.execute" title="Permalink to this definition"></a></dt>
+<dd><p>Called when executing a state.
+In the base class this raises a NotImplementedError.</p>
+<p>&#64;type ud: L{UserData} structure
+&#64;param ud: Userdata for the scope in which this state is executing</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="scripts.fsm_behaviour.main">
+<span class="sig-prename descclassname"><span class="pre">scripts.fsm_behaviour.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/fsm_behaviour.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.fsm_behaviour.main" title="Permalink to this definition"></a></dt>
+<dd><p>Main function of the Finite State Machine that initializes the node <code class="docutils literal notranslate"><span class="pre">fsm_behaviour</span></code> using SMACH modules.
+This method create the FSM and specifies the states with the relative transitions.
+Since the behaviour of the battery has higher priority with respect to all the other states, here it’s initialized
+the subscriber of the battery topic.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-scripts.world_generator">
+<span id="world-generator-module"></span><h1>World Generator Module<a class="headerlink" href="#module-scripts.world_generator" title="Permalink to this heading"></a></h1>
+<span class="target" id="module-world_generator"></span><p>ROS Node to create the ontology map and initialize the timestamps for the rooms.
+The 2D environment is composed by:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>4 rooms (R1, R2, R3, R4);</p></li>
+<li><p>2 corridors (C1, C2);</p></li>
+<li><p>1 special room (E), this is the charge location and also the init location;</p></li>
+<li><p>7 doors (D1, D2, D3, D4, D5, D6, D7).</p></li>
+</ul>
+</div></blockquote>
+<dl class="simple">
+<dt>Publishes to:</dt><dd><p>/world_loading: a boolean flag to communicate when the environment is created</p>
+</dd>
+</dl>
+<dl class="py function">
+<dt class="sig sig-object py" id="scripts.world_generator.build_world">
+<span class="sig-prename descclassname"><span class="pre">scripts.world_generator.</span></span><span class="sig-name descname"><span class="pre">build_world</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/world_generator.html#build_world"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.world_generator.build_world" title="Permalink to this definition"></a></dt>
+<dd><p>This main function initialize the <a class="reference internal" href="#module-world_generator" title="world_generator: Python code to create the OWL ontology (Unix)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">world_generator</span></code></a> node, the publisher and allows to use the
+<a class="reference external" href="https://github.com/EmaroLab/armor/blob/master/commands.md">Armor commands</a> to create the final ontology.
+It will publish a boolean that will be passed to the state <code class="docutils literal notranslate"><span class="pre">BUILD_WORLD</span></code> of the FSM, advertised by <a class="reference internal" href="#module-fsm_behaviour" title="fsm_behaviour: Python code of the finite state machine for the robot (Unix)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">fsm_behaviour</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="scripts.world_generator.timestamp_computation">
+<span class="sig-prename descclassname"><span class="pre">scripts.world_generator.</span></span><span class="sig-name descname"><span class="pre">timestamp_computation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/world_generator.html#timestamp_computation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.world_generator.timestamp_computation" title="Permalink to this definition"></a></dt>
+<dd><p>Function to clean the queried time stamp for both Rooms and Robot’s data property.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>list</strong> – the list of queried objects section of the Armor service message.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>elements of time information</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>timestamp</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-scripts.battery">
+<span id="battery-module"></span><h1>Battery Module<a class="headerlink" href="#module-scripts.battery" title="Permalink to this heading"></a></h1>
+<span class="target" id="module-battery"></span><p>ROS node which defines the behavior of the robot battery. This node simulate quite realistically the battery discharge
+and charge cycles with the use of a counter variable <code class="docutils literal notranslate"><span class="pre">battery_level</span></code> and the time parameters <code class="docutils literal notranslate"><span class="pre">time_discharge</span></code> and <code class="docutils literal notranslate"><span class="pre">time_recharge</span></code>.
+If the battery is fully charged, the <code class="docutils literal notranslate"><span class="pre">battery_status</span></code> is published to <code class="docutils literal notranslate"><span class="pre">1</span></code>. If instead the battery level is below the minimum threshold
+then <code class="docutils literal notranslate"><span class="pre">battery_status</span></code> is <code class="docutils literal notranslate"><span class="pre">0</span></code>. Depending on this, the <a class="reference internal" href="#module-fsm_behaviour" title="fsm_behaviour: Python code of the finite state machine for the robot (Unix)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">fsm_behaviour</span></code></a> changes its execution between <code class="docutils literal notranslate"><span class="pre">RECHARGING</span></code> state and all the others states.</p>
+<dl class="simple">
+<dt>Publishes to:</dt><dd><p>/battery_signal: a boolean flag to communicate when battery is low and when is totally charged</p>
+</dd>
+<dt>Subscribes  to:</dt><dd><p>/world_battery_sync: a Boolean flag for synchronization reasons with the <a class="reference internal" href="#module-fsm_behaviour" title="fsm_behaviour: Python code of the finite state machine for the robot (Unix)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">fsm_behaviour</span></code></a> node. When the world is correctly loaded
+the battery’s functionality start its execution.</p>
+</dd>
+</dl>
+<dl class="py function">
+<dt class="sig sig-object py" id="scripts.battery.battery_discharge">
+<span class="sig-prename descclassname"><span class="pre">scripts.battery.</span></span><span class="sig-name descname"><span class="pre">battery_discharge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">level</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/battery.html#battery_discharge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.battery.battery_discharge" title="Permalink to this definition"></a></dt>
+<dd><p>This function defines the battery discharge cycle. Starting from the maximum capacity (<code class="docutils literal notranslate"><span class="pre">BATTERY_CAPACITY</span></code>),
+the level is decreased in steps of 2 for each discharge time parameter.
+If the level reaches values lower than or equal to the minimum charge <code class="docutils literal notranslate"><span class="pre">threshold</span></code>, the <code class="docutils literal notranslate"><span class="pre">battery_status</span></code> is set to <code class="docutils literal notranslate"><span class="pre">0</span></code>.
+This indicates that the battery is low and must be recharged.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>level</strong> – counter variable that simulates the dynamic level of the battery during the cycle</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the battery flag</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>battery_status</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="scripts.battery.battery_recharge">
+<span class="sig-prename descclassname"><span class="pre">scripts.battery.</span></span><span class="sig-name descname"><span class="pre">battery_recharge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">level</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/battery.html#battery_recharge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.battery.battery_recharge" title="Permalink to this definition"></a></dt>
+<dd><p>This function defines the battery recharge cycle. Starting from the min capacity reached in the discharge cycle,
+the level is increased in steps of 2 for each recharge time parameter.
+When the level reach the maximum capacity (<code class="docutils literal notranslate"><span class="pre">BATTERY_CAPACITY</span></code>) value, the <code class="docutils literal notranslate"><span class="pre">battery_status</span></code> is set to <code class="docutils literal notranslate"><span class="pre">1</span></code>.
+This indicates that the battery is fully recharged.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>level</strong> – counter variable that simulates the dynamic level of the battery during the cycle</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the battery flag</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>battery_status</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="scripts.battery.main_battery_behaviour">
+<span class="sig-prename descclassname"><span class="pre">scripts.battery.</span></span><span class="sig-name descname"><span class="pre">main_battery_behaviour</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/battery.html#main_battery_behaviour"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.battery.main_battery_behaviour" title="Permalink to this definition"></a></dt>
+<dd><p>Function that define the battery behaviour with the initialization of the battery node.
+For synchronization with the FSM, this funcionality start its execution when <code class="xref py py-mod docutils literal notranslate"><span class="pre">world_callback</span></code> returns <code class="docutils literal notranslate"><span class="pre">1</span></code>, advertised by <a class="reference internal" href="#module-fsm_behaviour" title="fsm_behaviour: Python code of the finite state machine for the robot (Unix)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">fsm_behaviour</span></code></a> node.
+The boolean value of the battery to the state <code class="docutils literal notranslate"><span class="pre">battery_status</span></code> is advertised by <code class="xref py py-mod docutils literal notranslate"><span class="pre">battery_discharge</span></code> and <code class="xref py py-mod docutils literal notranslate"><span class="pre">battery_recharge</span></code>,
+and published in the dedicated topic.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="scripts.battery.world_callback">
+<span class="sig-prename descclassname"><span class="pre">scripts.battery.</span></span><span class="sig-name descname"><span class="pre">world_callback</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/battery.html#world_callback"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.battery.world_callback" title="Permalink to this definition"></a></dt>
+<dd><p>Callback function for the fsm publisher <code class="docutils literal notranslate"><span class="pre">/world_battery_sync</span></code>, that modifies the value of the global variable <code class="docutils literal notranslate"><span class="pre">world_done</span></code> and will let the code start.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-utilities.exprob_surveillance.state_machine_helper">
+<span id="helper-state-machine-module"></span><h1>Helper State Machine Module<a class="headerlink" href="#module-utilities.exprob_surveillance.state_machine_helper" title="Permalink to this heading"></a></h1>
+<span class="target" id="module-state_machine_helper"></span><p>ROS node in support of the main node <a class="reference internal" href="#module-fsm_behaviour" title="fsm_behaviour: Python code of the finite state machine for the robot (Unix)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">fsm_behaviour</span></code></a>. The software architecture allows initializing a
+helper class for the Final State Machine which controls the behavior of a surveillance robot.
+This node allows to have cleaner and more readable code in the <code class="docutils literal notranslate"><span class="pre">fsm_behaviour.py</span></code> node, in fact, every task
+called in the previously mentioned code is defined in the current code.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="utilities.exprob_surveillance.state_machine_helper.Helper">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">utilities.exprob_surveillance.state_machine_helper.</span></span><span class="sig-name descname"><span class="pre">Helper</span></span><a class="reference internal" href="_modules/utilities/exprob_surveillance/state_machine_helper.html#Helper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utilities.exprob_surveillance.state_machine_helper.Helper" title="Permalink to this definition"></a></dt>
+<dd><p>This class is created to decouple the implementation of the Finite State Machine, allowing to have a more readable and cleaner code in the <code class="docutils literal notranslate"><span class="pre">fsm_behaviour.py</span></code> node.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="utilities.exprob_surveillance.state_machine_helper.Helper.battery_callback">
+<span class="sig-name descname"><span class="pre">battery_callback</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utilities/exprob_surveillance/state_machine_helper.html#Helper.battery_callback"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utilities.exprob_surveillance.state_machine_helper.Helper.battery_callback" title="Permalink to this definition"></a></dt>
+<dd><p>Callback function for the map publisher <code class="docutils literal notranslate"><span class="pre">/battery_signal</span></code>, that modifies the value of the global variable <code class="docutils literal notranslate"><span class="pre">battery_status</span></code> and will let the code start.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>self</strong> – <p>instance of the current class</p>
+<p>data: data in the topic <code class="docutils literal notranslate"><span class="pre">/battery_signal</span></code></p>
+</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Bool value that states the flag about the battery status</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>self.battery_status</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="utilities.exprob_surveillance.state_machine_helper.Helper.motion_control">
+<span class="sig-name descname"><span class="pre">motion_control</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">robPos</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">desPos</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utilities/exprob_surveillance/state_machine_helper.html#Helper.motion_control"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utilities.exprob_surveillance.state_machine_helper.Helper.motion_control" title="Permalink to this definition"></a></dt>
+<dd><p>Method used when the Robot has to change its position in the environment.</p>
+<dl class="simple">
+<dt>This is the main function that define the motion of the robot in the map and takes the help of three other functions</dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">rooms_search</span></code>;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">path_planning</span></code>;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">time_set</span></code>.</p></li>
+</ul>
+</dd>
+<dt>Args</dt><dd><p>self: instance of the current class
+robPos: is the actual robot position when this function is called
+desPos: is the desired robot position</p>
+</dd>
+<dt>Returns</dt><dd><p>robot_position: the updated robot position at the end of the movement, when the location is changed</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="utilities.exprob_surveillance.state_machine_helper.Helper.path_planning">
+<span class="sig-name descname"><span class="pre">path_planning</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">listNow</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">listDes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">robPos</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utilities/exprob_surveillance/state_machine_helper.html#Helper.path_planning"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utilities.exprob_surveillance.state_machine_helper.Helper.path_planning" title="Permalink to this definition"></a></dt>
+<dd><p>This method is needed to plan the path from one position to another, recursively scanning the list of reachable point for the robot
+and the connected area to the desired position.</p>
+<dl class="simple">
+<dt>Args</dt><dd><p>self: instance of the current class
+l1: the list of string from querying the <em>connectedTo</em> data property of the actual robot position
+l2: the list of string from querying the <em>connectedTo</em> data property of the desired robot location
+robPos: the actual robot position in the moment the function is called for checking operation</p>
+</dd>
+<dt>Returns</dt><dd><p>self.shared_location: the shared location between the two lists</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="utilities.exprob_surveillance.state_machine_helper.Helper.robot_location">
+<span class="sig-name descname"><span class="pre">robot_location</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">isInList</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utilities/exprob_surveillance/state_machine_helper.html#Helper.robot_location"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utilities.exprob_surveillance.state_machine_helper.Helper.robot_location" title="Permalink to this definition"></a></dt>
+<dd><p>Method to extract the element of the queried <code class="docutils literal notranslate"><span class="pre">isIn</span></code> robot’s object property.</p>
+<dl class="simple">
+<dt>Args</dt><dd><p>self: instance of the current class
+isInList: queried objects section of the Armor service message</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="utilities.exprob_surveillance.state_machine_helper.Helper.rooms_search">
+<span class="sig-name descname"><span class="pre">rooms_search</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">roomList</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utilities/exprob_surveillance/state_machine_helper.html#Helper.rooms_search"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utilities.exprob_surveillance.state_machine_helper.Helper.rooms_search" title="Permalink to this definition"></a></dt>
+<dd><p>Method to rewrite the queried data property list of the room, saving in the returned list as separate strings</p>
+<dl class="simple">
+<dt>Args</dt><dd><p>self: instance of the current class
+roomList: queried objects section of the Armor service message</p>
+</dd>
+<dt>Returns</dt><dd><p>self.location_list: the list of strings of locations</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="utilities.exprob_surveillance.state_machine_helper.Helper.set_urgency">
+<span class="sig-name descname"><span class="pre">set_urgency</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/utilities/exprob_surveillance/state_machine_helper.html#Helper.set_urgency"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utilities.exprob_surveillance.state_machine_helper.Helper.set_urgency" title="Permalink to this definition"></a></dt>
+<dd><p>Method that set to <code class="docutils literal notranslate"><span class="pre">1</span></code> (True) the urgency flag if there are some rooms in the <code class="docutils literal notranslate"><span class="pre">urgency_rooms`'</span> <span class="pre">list,</span>
+<span class="pre">otherwise</span> <span class="pre">the</span> <span class="pre">flag</span> <span class="pre">will</span> <span class="pre">be</span> <span class="pre">set</span> <span class="pre">to</span> <span class="pre">``0</span></code>.</p>
+<dl class="simple">
+<dt>Args</dt><dd><p>self: instance of the current class</p>
+</dd>
+<dt>Returns</dt><dd><p>self.urgency_status: Bool value that states the flag about the urgency status</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="utilities.exprob_surveillance.state_machine_helper.Helper.time_set">
+<span class="sig-name descname"><span class="pre">time_set</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timeList</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utilities/exprob_surveillance/state_machine_helper.html#Helper.time_set"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utilities.exprob_surveillance.state_machine_helper.Helper.time_set" title="Permalink to this definition"></a></dt>
+<dd><p>Method to rewrite the queried timestamp for both Rooms and Robot’s data property.</p>
+<dl class="simple">
+<dt>Args</dt><dd><p>self: instance of the current class
+time_list: queried objects section of the Armor service message</p>
+</dd>
+<dt>Returns</dt><dd><p>self.timestamp: the integer value between the double quotes of the OWL, saved as list of string</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="utilities.exprob_surveillance.state_machine_helper.Helper.urgency">
+<span class="sig-name descname"><span class="pre">urgency</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/utilities/exprob_surveillance/state_machine_helper.html#Helper.urgency"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utilities.exprob_surveillance.state_machine_helper.Helper.urgency" title="Permalink to this definition"></a></dt>
+<dd><p>Method that recursively checks on the <code class="docutils literal notranslate"><span class="pre">urgent_rooms</span></code> list if there are some <code class="docutils literal notranslate"><span class="pre">URGENT</span></code> rooms.
+If the list is empty the flag <code class="docutils literal notranslate"><span class="pre">urgency_status</span></code> is set to <code class="docutils literal notranslate"><span class="pre">0</span></code> (False), otherwise if there are some urgent rooms the flag will be set to <code class="docutils literal notranslate"><span class="pre">1</span></code>.</p>
+<dl class="simple">
+<dt>Args</dt><dd><p>self: instance of the current class</p>
+</dd>
+<dt>Returns</dt><dd><p>self.urgent_rooms: list of the urgent rooms, modified in the <code class="xref py py-mod docutils literal notranslate"><span class="pre">Surveillance</span></code> status.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="utilities.exprob_surveillance.state_machine_helper.Helper.world_callback">
+<span class="sig-name descname"><span class="pre">world_callback</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utilities/exprob_surveillance/state_machine_helper.html#Helper.world_callback"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utilities.exprob_surveillance.state_machine_helper.Helper.world_callback" title="Permalink to this definition"></a></dt>
+<dd><p>Callback function for the map publisher <code class="docutils literal notranslate"><span class="pre">/world_loading</span></code>, that modifies the value of the global variable <code class="docutils literal notranslate"><span class="pre">world_loaded</span></code> and will let the code start.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>self</strong> – <p>instance of the current class</p>
+<p>data: data in the topic <code class="docutils literal notranslate"><span class="pre">/world_loading</span></code></p>
+</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Bool value that states the flag of the generation of the world</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>self.world_loaded</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Thomas Campagnolo.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

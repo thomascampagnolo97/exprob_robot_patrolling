@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>scripts.world_generator &mdash; Experimental Robotics Laboratory Assignment: robot surveillance 1.0 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/graphviz.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> Experimental Robotics Laboratory Assignment: robot surveillance
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Experimental Robotics Laboratory Assignment: robot surveillance</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+      <li>scripts.world_generator</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for scripts.world_generator</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">.. module:: world_generator</span>
+<span class="sd">    :platform: Unix</span>
+<span class="sd">    :synopsis: Python code to create the OWL ontology </span>
+
+<span class="sd">.. moduleauthor:: Thomas Campagnolo &lt;s5343274@studenti.unige.it&gt;</span>
+
+<span class="sd">ROS Node to create the ontology map and initialize the timestamps for the rooms.</span>
+<span class="sd">The 2D environment is composed by:</span>
+<span class="sd">    - 4 rooms (R1, R2, R3, R4);</span>
+<span class="sd">    - 2 corridors (C1, C2);</span>
+<span class="sd">    - 1 special room (E), this is the charge location and also the init location;</span>
+<span class="sd">    - 7 doors (D1, D2, D3, D4, D5, D6, D7).</span>
+<span class="sd">   </span>
+<span class="sd">Publishes to:</span>
+<span class="sd">    /world_loading: a boolean flag to communicate when the environment is created</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+
+<span class="c1"># An example of the topological map can be the follow:</span>
+<span class="c1">#   _________________________________</span>
+<span class="c1"># 	|               				|</span>
+<span class="c1"># 	|		        E               |</span>
+<span class="c1"># 	|				                |</span>
+<span class="c1"># 	|__________D6_______D7__________|</span>
+<span class="c1"># 	|	    |   	|   	|	    |</span>
+<span class="c1"># 	|  R1	|  C1	|  C2	|   R3	|</span>
+<span class="c1"># 	|	    |	    |	    |	    |</span>
+<span class="c1"># 	|	    D1	    |	    D3	    |</span>
+<span class="c1"># 	|	    |	    |	    |	    |</span>
+<span class="c1"># 	|_______|	    |	    |_______|</span>
+<span class="c1"># 	|	    |      D5	    |	    |</span>
+<span class="c1"># 	|	    |	    |	    |	    |</span>
+<span class="c1"># 	|	    D2	    |	    D4	    |</span>
+<span class="c1"># 	|	    |	    |	    |	    |</span>
+<span class="c1"># 	|  R2	|       |	    |   R4	|</span>
+<span class="c1"># 	|_______|_______|_______|_______|</span>
+
+
+<span class="kn">import</span> <span class="nn">rospy</span>
+<span class="kn">import</span> <span class="nn">rospkg</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">from</span> <span class="nn">std_msgs.msg</span> <span class="kn">import</span> <span class="n">Bool</span>
+
+<span class="kn">from</span> <span class="nn">armor_api.armor_client</span> <span class="kn">import</span> <span class="n">ArmorClient</span>
+
+<span class="c1"># Import constant name defined to structure the architecture</span>
+<span class="kn">from</span> <span class="nn">exprob_surveillance</span> <span class="kn">import</span> <span class="n">architecture_name_mapper</span> <span class="k">as</span> <span class="n">anm</span>
+
+<span class="c1"># Arguments for loading and create the ontology</span>
+<span class="n">rp</span> <span class="o">=</span> <span class="n">rospkg</span><span class="o">.</span><span class="n">RosPack</span><span class="p">()</span>
+<span class="n">assignment_path</span> <span class="o">=</span> <span class="n">rp</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="s1">&#39;exprob_surveillance&#39;</span><span class="p">)</span>
+<span class="n">ONTOLOGY_FILE_PATH</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">assignment_path</span><span class="p">,</span> <span class="s2">&quot;topological_map&quot;</span><span class="p">,</span> <span class="s2">&quot;topological_map.owl&quot;</span><span class="p">)</span>
+<span class="n">WORLD_ONTOLOGY_FILE_PATH</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">assignment_path</span><span class="p">,</span> <span class="s2">&quot;topological_map&quot;</span><span class="p">,</span> <span class="s2">&quot;world_surveillance.owl&quot;</span><span class="p">)</span> <span class="c1"># final map OWL, also used for debugging</span>
+<span class="n">WEB_PATH</span> <span class="o">=</span> <span class="s1">&#39;http://bnc/exp-rob-lab/2022-23&#39;</span>
+
+
+<div class="viewcode-block" id="timestamp_computation"><a class="viewcode-back" href="../../index.html#scripts.world_generator.timestamp_computation">[docs]</a><span class="k">def</span> <span class="nf">timestamp_computation</span><span class="p">(</span><span class="nb">list</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to clean the queried time stamp for both Rooms and Robot&#39;s data property.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        list: the list of queried objects section of the Armor service message.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        timestamp: elements of time information</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">timestamp</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">11</span><span class="p">):</span>
+            <span class="n">timestamp</span><span class="o">=</span><span class="n">timestamp</span><span class="o">+</span><span class="n">i</span><span class="p">[</span><span class="n">element</span><span class="p">]</span>
+     
+    <span class="k">return</span> <span class="n">timestamp</span></div>
+
+<div class="viewcode-block" id="build_world"><a class="viewcode-back" href="../../index.html#scripts.world_generator.build_world">[docs]</a><span class="k">def</span> <span class="nf">build_world</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This main function initialize the :mod:`world_generator` node, the publisher and allows to use the </span>
+<span class="sd">    `Armor commands &lt;https://github.com/EmaroLab/armor/blob/master/commands.md&gt;`_ to create the final ontology.</span>
+<span class="sd">    It will publish a boolean that will be passed to the state ``BUILD_WORLD`` of the FSM, advertised by :mod:`fsm_behaviour`.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">rospy</span><span class="o">.</span><span class="n">init_node</span><span class="p">(</span><span class="n">anm</span><span class="o">.</span><span class="n">NODE_WORLD_GENERATOR</span><span class="p">,</span> <span class="n">anonymous</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    
+    <span class="n">pub</span> <span class="o">=</span> <span class="n">rospy</span><span class="o">.</span><span class="n">Publisher</span><span class="p">(</span><span class="n">anm</span><span class="o">.</span><span class="n">TOPIC_WORLD_LOAD</span><span class="p">,</span> <span class="n">Bool</span><span class="p">,</span> <span class="n">queue_size</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+    <span class="n">pub</span><span class="o">.</span><span class="n">publish</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Building the environment...&quot;</span><span class="p">)</span>
+
+    <span class="n">client</span> <span class="o">=</span> <span class="n">ArmorClient</span><span class="p">(</span><span class="s2">&quot;example&quot;</span><span class="p">,</span> <span class="s2">&quot;ontoRef&quot;</span><span class="p">)</span>
+
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;LOAD&#39;</span><span class="p">,</span><span class="s1">&#39;FILE&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,[</span><span class="n">ONTOLOGY_FILE_PATH</span><span class="p">,</span> <span class="n">WEB_PATH</span><span class="p">,</span> <span class="s1">&#39;true&#39;</span><span class="p">,</span> <span class="s1">&#39;PELLET&#39;</span><span class="p">,</span> <span class="s1">&#39;false&#39;</span><span class="p">])</span>
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;ADD&#39;</span><span class="p">,</span><span class="s1">&#39;OBJECTPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;hasDoor&#39;</span><span class="p">,</span> <span class="s1">&#39;E&#39;</span><span class="p">,</span> <span class="s1">&#39;D6&#39;</span><span class="p">])</span>
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;ADD&#39;</span><span class="p">,</span><span class="s1">&#39;OBJECTPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;hasDoor&#39;</span><span class="p">,</span> <span class="s1">&#39;E&#39;</span><span class="p">,</span> <span class="s1">&#39;D7&#39;</span><span class="p">])</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Doors D6 and D7 associated to room E (RECHARGING ROOM)&#39;</span><span class="p">)</span>
+
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;ADD&#39;</span><span class="p">,</span><span class="s1">&#39;OBJECTPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;hasDoor&#39;</span><span class="p">,</span> <span class="s1">&#39;C1&#39;</span><span class="p">,</span> <span class="s1">&#39;D1&#39;</span><span class="p">])</span>
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;ADD&#39;</span><span class="p">,</span><span class="s1">&#39;OBJECTPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;hasDoor&#39;</span><span class="p">,</span> <span class="s1">&#39;C1&#39;</span><span class="p">,</span> <span class="s1">&#39;D2&#39;</span><span class="p">])</span>
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;ADD&#39;</span><span class="p">,</span><span class="s1">&#39;OBJECTPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;hasDoor&#39;</span><span class="p">,</span> <span class="s1">&#39;C1&#39;</span><span class="p">,</span> <span class="s1">&#39;D5&#39;</span><span class="p">])</span>
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;ADD&#39;</span><span class="p">,</span><span class="s1">&#39;OBJECTPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;hasDoor&#39;</span><span class="p">,</span> <span class="s1">&#39;C1&#39;</span><span class="p">,</span> <span class="s1">&#39;D6&#39;</span><span class="p">])</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Doors D1, D2, D5, D6 associated to corridor C1&#39;</span><span class="p">)</span>
+
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;ADD&#39;</span><span class="p">,</span><span class="s1">&#39;OBJECTPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;hasDoor&#39;</span><span class="p">,</span> <span class="s1">&#39;C2&#39;</span><span class="p">,</span> <span class="s1">&#39;D3&#39;</span><span class="p">])</span>
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;ADD&#39;</span><span class="p">,</span><span class="s1">&#39;OBJECTPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;hasDoor&#39;</span><span class="p">,</span> <span class="s1">&#39;C2&#39;</span><span class="p">,</span> <span class="s1">&#39;D4&#39;</span><span class="p">])</span>
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;ADD&#39;</span><span class="p">,</span><span class="s1">&#39;OBJECTPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;hasDoor&#39;</span><span class="p">,</span> <span class="s1">&#39;C2&#39;</span><span class="p">,</span> <span class="s1">&#39;D5&#39;</span><span class="p">])</span>
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;ADD&#39;</span><span class="p">,</span><span class="s1">&#39;OBJECTPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;hasDoor&#39;</span><span class="p">,</span> <span class="s1">&#39;C2&#39;</span><span class="p">,</span> <span class="s1">&#39;D7&#39;</span><span class="p">])</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Doors D3, D4, D5, D7 associated to corridor C2&#39;</span><span class="p">)</span>
+
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;ADD&#39;</span><span class="p">,</span><span class="s1">&#39;OBJECTPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;hasDoor&#39;</span><span class="p">,</span> <span class="s1">&#39;R1&#39;</span><span class="p">,</span> <span class="s1">&#39;D1&#39;</span><span class="p">])</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Door D1 associated to room R1&#39;</span><span class="p">)</span>
+
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;ADD&#39;</span><span class="p">,</span><span class="s1">&#39;OBJECTPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;hasDoor&#39;</span><span class="p">,</span> <span class="s1">&#39;R2&#39;</span><span class="p">,</span> <span class="s1">&#39;D2&#39;</span><span class="p">])</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Door D2 associated to room R2&#39;</span><span class="p">)</span>
+
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;ADD&#39;</span><span class="p">,</span><span class="s1">&#39;OBJECTPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;hasDoor&#39;</span><span class="p">,</span> <span class="s1">&#39;R3&#39;</span><span class="p">,</span> <span class="s1">&#39;D3&#39;</span><span class="p">])</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Door D3 associated to room R3&#39;</span><span class="p">)</span>
+
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;ADD&#39;</span><span class="p">,</span><span class="s1">&#39;OBJECTPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;hasDoor&#39;</span><span class="p">,</span> <span class="s1">&#39;R4&#39;</span><span class="p">,</span> <span class="s1">&#39;D4&#39;</span><span class="p">])</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Door D4 associated to room R4&#39;</span><span class="p">)</span>
+
+    <span class="c1"># declaration of disjunction of all instances of the Abox</span>
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;DISJOINT&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,[</span><span class="s1">&#39;R1&#39;</span><span class="p">,</span><span class="s1">&#39;R2&#39;</span><span class="p">,</span><span class="s1">&#39;R3&#39;</span><span class="p">,</span><span class="s1">&#39;R4&#39;</span><span class="p">,</span><span class="s1">&#39;E&#39;</span><span class="p">,</span><span class="s1">&#39;C1&#39;</span><span class="p">,</span><span class="s1">&#39;C2&#39;</span><span class="p">,</span><span class="s1">&#39;D1&#39;</span><span class="p">,</span><span class="s1">&#39;D2&#39;</span><span class="p">,</span><span class="s1">&#39;D3&#39;</span><span class="p">,</span><span class="s1">&#39;D4&#39;</span><span class="p">,</span><span class="s1">&#39;D5&#39;</span><span class="p">,</span><span class="s1">&#39;D6&#39;</span><span class="p">,</span><span class="s1">&#39;D7&#39;</span><span class="p">])</span>
+
+    <span class="c1"># definition of the init position of the robot</span>
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;ADD&#39;</span><span class="p">,</span><span class="s1">&#39;OBJECTPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;isIn&#39;</span><span class="p">,</span> <span class="s1">&#39;Robot1&#39;</span><span class="p">,</span> <span class="n">anm</span><span class="o">.</span><span class="n">INIT_LOCATION</span><span class="p">])</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Initialization: Robot1 is in: &#39;</span><span class="p">,</span> <span class="n">anm</span><span class="o">.</span><span class="n">INIT_LOCATION</span><span class="p">)</span>
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REASON&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,[</span><span class="s1">&#39;&#39;</span><span class="p">])</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Reasoning...&#39;</span><span class="p">)</span>
+
+    <span class="n">rospy</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="c1"># Start the timestamp in every location to retrieve when a location becomes urgent</span>
+    <span class="c1"># Visit and timestamp for R1</span>
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REPLACE&#39;</span><span class="p">,</span> <span class="s1">&#39;OBJECTPROP&#39;</span><span class="p">,</span> <span class="s1">&#39;IND&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;isIn&#39;</span><span class="p">,</span> <span class="s1">&#39;Robot1&#39;</span><span class="p">,</span> <span class="s1">&#39;R1&#39;</span><span class="p">,</span> <span class="s1">&#39;E&#39;</span><span class="p">])</span>
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REASON&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,[</span><span class="s1">&#39;&#39;</span><span class="p">])</span>
+    <span class="n">rob_time</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;QUERY&#39;</span><span class="p">,</span><span class="s1">&#39;DATAPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;now&#39;</span><span class="p">,</span> <span class="s1">&#39;Robot1&#39;</span><span class="p">])</span>
+    <span class="n">old_rob_time</span> <span class="o">=</span> <span class="n">timestamp_computation</span><span class="p">(</span><span class="n">rob_time</span><span class="o">.</span><span class="n">queried_objects</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;R1 last visit time: &#39;</span><span class="p">,</span> <span class="n">old_rob_time</span><span class="p">)</span>
+    <span class="n">current_time</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;R1 current time: &#39;</span><span class="p">,</span> <span class="n">current_time</span><span class="p">)</span>
+
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REPLACE&#39;</span><span class="p">,</span><span class="s1">&#39;DATAPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;now&#39;</span><span class="p">,</span> <span class="s1">&#39;Robot1&#39;</span><span class="p">,</span> <span class="s1">&#39;Long&#39;</span><span class="p">,</span> <span class="n">current_time</span><span class="p">,</span> <span class="n">old_rob_time</span><span class="p">])</span>
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REASON&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,[</span><span class="s1">&#39;&#39;</span><span class="p">])</span>
+    
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;ADD&#39;</span><span class="p">,</span><span class="s1">&#39;DATAPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;visitedAt&#39;</span><span class="p">,</span><span class="s1">&#39;R1&#39;</span><span class="p">,</span> <span class="s1">&#39;Long&#39;</span><span class="p">,</span> <span class="n">current_time</span><span class="p">])</span>
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REASON&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,[</span><span class="s1">&#39;&#39;</span><span class="p">])</span>
+
+    <span class="n">rospy</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># Visit and timestamp for R2</span>
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REPLACE&#39;</span><span class="p">,</span> <span class="s1">&#39;OBJECTPROP&#39;</span><span class="p">,</span> <span class="s1">&#39;IND&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;isIn&#39;</span><span class="p">,</span> <span class="s1">&#39;Robot1&#39;</span><span class="p">,</span> <span class="s1">&#39;R2&#39;</span><span class="p">,</span> <span class="s1">&#39;R1&#39;</span><span class="p">])</span>
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REASON&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,[</span><span class="s1">&#39;&#39;</span><span class="p">])</span>
+    <span class="n">rob_time</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;QUERY&#39;</span><span class="p">,</span><span class="s1">&#39;DATAPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;now&#39;</span><span class="p">,</span> <span class="s1">&#39;Robot1&#39;</span><span class="p">])</span>
+    <span class="n">old_rob_time</span> <span class="o">=</span> <span class="n">timestamp_computation</span><span class="p">(</span><span class="n">rob_time</span><span class="o">.</span><span class="n">queried_objects</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;R2 last visit time: &#39;</span><span class="p">,</span> <span class="n">old_rob_time</span><span class="p">)</span>
+    <span class="n">current_time</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;R2 current time: &#39;</span><span class="p">,</span> <span class="n">current_time</span><span class="p">)</span>
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REPLACE&#39;</span><span class="p">,</span><span class="s1">&#39;DATAPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;now&#39;</span><span class="p">,</span> <span class="s1">&#39;Robot1&#39;</span><span class="p">,</span> <span class="s1">&#39;Long&#39;</span><span class="p">,</span> <span class="n">current_time</span><span class="p">,</span> <span class="n">old_rob_time</span><span class="p">])</span>
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REASON&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,[</span><span class="s1">&#39;&#39;</span><span class="p">])</span>
+
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;ADD&#39;</span><span class="p">,</span><span class="s1">&#39;DATAPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;visitedAt&#39;</span><span class="p">,</span><span class="s1">&#39;R2&#39;</span><span class="p">,</span> <span class="s1">&#39;Long&#39;</span><span class="p">,</span> <span class="n">current_time</span><span class="p">])</span>
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REASON&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,[</span><span class="s1">&#39;&#39;</span><span class="p">])</span>
+
+    <span class="n">rospy</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># Visit and timestamp for R3</span>
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REPLACE&#39;</span><span class="p">,</span> <span class="s1">&#39;OBJECTPROP&#39;</span><span class="p">,</span> <span class="s1">&#39;IND&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;isIn&#39;</span><span class="p">,</span> <span class="s1">&#39;Robot1&#39;</span><span class="p">,</span> <span class="s1">&#39;R3&#39;</span><span class="p">,</span> <span class="s1">&#39;R2&#39;</span><span class="p">])</span> 
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REASON&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,[</span><span class="s1">&#39;&#39;</span><span class="p">])</span>
+    <span class="n">rob_time</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;QUERY&#39;</span><span class="p">,</span><span class="s1">&#39;DATAPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;now&#39;</span><span class="p">,</span> <span class="s1">&#39;Robot1&#39;</span><span class="p">])</span>
+    <span class="n">old_rob_time</span> <span class="o">=</span> <span class="n">timestamp_computation</span><span class="p">(</span><span class="n">rob_time</span><span class="o">.</span><span class="n">queried_objects</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;R3 last visit time: &#39;</span><span class="p">,</span> <span class="n">old_rob_time</span><span class="p">)</span>
+    <span class="n">current_time</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;R3 current time: &#39;</span><span class="p">,</span> <span class="n">current_time</span><span class="p">)</span>    
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REPLACE&#39;</span><span class="p">,</span><span class="s1">&#39;DATAPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;now&#39;</span><span class="p">,</span> <span class="s1">&#39;Robot1&#39;</span><span class="p">,</span> <span class="s1">&#39;Long&#39;</span><span class="p">,</span> <span class="n">current_time</span><span class="p">,</span> <span class="n">old_rob_time</span><span class="p">])</span>
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REASON&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,[</span><span class="s1">&#39;&#39;</span><span class="p">])</span>
+
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;ADD&#39;</span><span class="p">,</span><span class="s1">&#39;DATAPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;visitedAt&#39;</span><span class="p">,</span><span class="s1">&#39;R3&#39;</span><span class="p">,</span> <span class="s1">&#39;Long&#39;</span><span class="p">,</span> <span class="n">current_time</span><span class="p">])</span>
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REASON&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,[</span><span class="s1">&#39;&#39;</span><span class="p">])</span>
+
+    <span class="n">rospy</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># Visit and timestamp for R4</span>
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REPLACE&#39;</span><span class="p">,</span> <span class="s1">&#39;OBJECTPROP&#39;</span><span class="p">,</span> <span class="s1">&#39;IND&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;isIn&#39;</span><span class="p">,</span> <span class="s1">&#39;Robot1&#39;</span><span class="p">,</span> <span class="s1">&#39;R4&#39;</span><span class="p">,</span> <span class="s1">&#39;R3&#39;</span><span class="p">])</span>  
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REASON&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,[</span><span class="s1">&#39;&#39;</span><span class="p">])</span>
+    <span class="n">rob_time</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;QUERY&#39;</span><span class="p">,</span><span class="s1">&#39;DATAPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;now&#39;</span><span class="p">,</span> <span class="s1">&#39;Robot1&#39;</span><span class="p">])</span>
+    <span class="n">old_rob_time</span> <span class="o">=</span> <span class="n">timestamp_computation</span><span class="p">(</span><span class="n">rob_time</span><span class="o">.</span><span class="n">queried_objects</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;R4 last visit time: &#39;</span><span class="p">,</span> <span class="n">old_rob_time</span><span class="p">)</span>
+    <span class="n">current_time</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;R4 current time: &#39;</span><span class="p">,</span> <span class="n">current_time</span><span class="p">)</span>
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REPLACE&#39;</span><span class="p">,</span><span class="s1">&#39;DATAPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;now&#39;</span><span class="p">,</span> <span class="s1">&#39;Robot1&#39;</span><span class="p">,</span> <span class="s1">&#39;Long&#39;</span><span class="p">,</span> <span class="n">current_time</span><span class="p">,</span> <span class="n">old_rob_time</span><span class="p">])</span>
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REASON&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,[</span><span class="s1">&#39;&#39;</span><span class="p">])</span>
+
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;ADD&#39;</span><span class="p">,</span><span class="s1">&#39;DATAPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;visitedAt&#39;</span><span class="p">,</span><span class="s1">&#39;R4&#39;</span><span class="p">,</span> <span class="s1">&#39;Long&#39;</span><span class="p">,</span> <span class="n">current_time</span><span class="p">])</span>
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REASON&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,[</span><span class="s1">&#39;&#39;</span><span class="p">])</span>
+
+    <span class="n">rospy</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REPLACE&#39;</span><span class="p">,</span> <span class="s1">&#39;OBJECTPROP&#39;</span><span class="p">,</span> <span class="s1">&#39;IND&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;isIn&#39;</span><span class="p">,</span> <span class="s1">&#39;Robot1&#39;</span><span class="p">,</span> <span class="n">anm</span><span class="o">.</span><span class="n">INIT_LOCATION</span><span class="p">,</span> <span class="s1">&#39;R4&#39;</span><span class="p">])</span>
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REASON&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,[</span><span class="s1">&#39;&#39;</span><span class="p">])</span>
+
+    <span class="n">rob_time</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;QUERY&#39;</span><span class="p">,</span><span class="s1">&#39;DATAPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;now&#39;</span><span class="p">,</span> <span class="s1">&#39;Robot1&#39;</span><span class="p">])</span>
+    <span class="n">old_rob_time</span> <span class="o">=</span> <span class="n">timestamp_computation</span><span class="p">(</span><span class="n">rob_time</span><span class="o">.</span><span class="n">queried_objects</span><span class="p">)</span>
+    <span class="n">current_time</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()))</span>
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REPLACE&#39;</span><span class="p">,</span><span class="s1">&#39;DATAPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;now&#39;</span><span class="p">,</span> <span class="s1">&#39;Robot1&#39;</span><span class="p">,</span> <span class="s1">&#39;Long&#39;</span><span class="p">,</span> <span class="n">current_time</span><span class="p">,</span> <span class="n">old_rob_time</span><span class="p">])</span>
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REASON&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,[</span><span class="s1">&#39;&#39;</span><span class="p">])</span>
+
+    <span class="c1"># save the final ontology</span>
+    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;SAVE&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,[</span><span class="n">WORLD_ONTOLOGY_FILE_PATH</span><span class="p">])</span>
+
+    <span class="k">while</span> <span class="ow">not</span> <span class="n">rospy</span><span class="o">.</span><span class="n">is_shutdown</span><span class="p">():</span>
+        <span class="n">pub</span><span class="o">.</span><span class="n">publish</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span></div>
+    
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+
+    <span class="k">try</span><span class="p">:</span>
+    	<span class="n">build_world</span><span class="p">()</span>
+    <span class="k">except</span> <span class="n">rospy</span><span class="o">.</span><span class="n">ROSInterruptException</span><span class="p">:</span>
+    	<span class="k">pass</span>
+   
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Thomas Campagnolo.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

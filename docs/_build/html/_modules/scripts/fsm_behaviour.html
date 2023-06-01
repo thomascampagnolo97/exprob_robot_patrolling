@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>scripts.fsm_behaviour &mdash; Experimental Robotics Laboratory Assignment: robot surveillance 1.0 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/graphviz.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> Experimental Robotics Laboratory Assignment: robot surveillance
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Experimental Robotics Laboratory Assignment: robot surveillance</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+      <li>scripts.fsm_behaviour</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for scripts.fsm_behaviour</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">.. module:: fsm_behaviour</span>
+<span class="sd">    :platform: Unix</span>
+<span class="sd">    :synopsis: Python code of the finite state machine for the robot</span>
+<span class="sd">    </span>
+<span class="sd">.. moduleauthor:: Thomas Campagnolo &lt;s5343274@studenti.unige.it&gt;</span>
+
+<span class="sd">**Overview**</span>
+
+<span class="sd">The scenario involves a robot deployed in a indoor environment for surveillance purposes.</span>
+<span class="sd">This is finite state machine that uses the `Smach tool &lt;https://wiki.ros.org/smach&gt;`_ to implement it in ROS. </span>
+
+<span class="sd">The FSM menages the surveillance behavior of the robot. It moves among locations with this policy:</span>
+<span class="sd">    1. it should mainly stay on corridors,</span>
+<span class="sd">    2. if a reachable room has not been visited for 20 seconds, the room become **URGENT** and the robot must visit it.</span>
+
+<span class="sd">When the robot&#39;s battery is low, it goes in the E location, and wait for some times (recharging action in :mod:`battery` node) before to</span>
+<span class="sd">start again with the above behaviour.</span>
+
+<span class="sd">Publishes to:</span>
+<span class="sd">    /world_battery_sync: a Boolean flag for synchronization reasons with the :mod:`battery` node. When the world is correctly loaded </span>
+<span class="sd">    the battery&#39;s functionality start its execution</span>
+
+<span class="sd">Subscribes  to:</span>
+<span class="sd">    /world_loading: a Boolean flag to communicate when the map is created correctly.</span>
+<span class="sd">    /battery_signal: a Boolean flag to communicate when battery is low and when is fully charged</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">rospkg</span>
+<span class="kn">import</span> <span class="nn">rospy</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">import</span> <span class="nn">smach</span>
+<span class="kn">import</span> <span class="nn">smach_ros</span>
+
+<span class="kn">from</span> <span class="nn">armor_api.armor_client</span> <span class="kn">import</span> <span class="n">ArmorClient</span>
+<span class="kn">from</span> <span class="nn">std_msgs.msg</span> <span class="kn">import</span> <span class="n">Bool</span>
+
+<span class="c1"># Import constant name defined to structure the architecture</span>
+<span class="kn">from</span> <span class="nn">exprob_surveillance</span> <span class="kn">import</span> <span class="n">architecture_name_mapper</span> <span class="k">as</span> <span class="n">anm</span>
+
+<span class="c1"># Import the class that support the interface of the Finite State Machine, which is available in this file</span>
+<span class="kn">from</span> <span class="nn">exprob_surveillance.state_machine_helper</span> <span class="kn">import</span> <span class="n">Helper</span>
+
+
+<span class="c1"># States of the Finite State Machine</span>
+<span class="n">STATE_BUILD_WORLD</span> <span class="o">=</span> <span class="s1">&#39;BUILD_WORLD&#39;</span>       <span class="c1"># State where the environment is build using the ontology</span>
+<span class="n">STATE_NO_EMERGENCY</span> <span class="o">=</span> <span class="s1">&#39;NO_EMERGENCY&#39;</span>     <span class="c1"># State of non-urgency room, the robot only moves between the corridors</span>
+<span class="n">STATE_SURVEILLANCE</span> <span class="o">=</span> <span class="s1">&#39;SURVEILLANCE&#39;</span>     <span class="c1"># State of urgency room, the robot must visit the urgency locations for surveillance purposes</span>
+<span class="n">STATE_RECHARGING</span> <span class="o">=</span> <span class="s1">&#39;RECHARGING&#39;</span>         <span class="c1"># State where the robot recharges its battery</span>
+
+<span class="c1"># Transitions of the Finite State Machine.</span>
+<span class="n">TRANS_WORLD_DONE</span> <span class="o">=</span> <span class="s1">&#39;world_done&#39;</span>             <span class="c1"># Transition that identifies the correct loading of the map</span>
+<span class="n">TRANS_WAITING_MAP</span> <span class="o">=</span> <span class="s1">&#39;waiting_map&#39;</span>           <span class="c1"># Transition to check if the map is uploaded correctly</span>
+<span class="n">TRANS_BATTERY_LOW</span> <span class="o">=</span> <span class="s1">&#39;battery_low&#39;</span>           <span class="c1"># Transition for the low battery charge. The robot needs to recharge</span>
+<span class="n">TRANS_BATTERY_CHARGED</span> <span class="o">=</span> <span class="s1">&#39;battery_charged&#39;</span>   <span class="c1"># Transition notifying full battery charge</span>
+<span class="n">TRANS_URGENT_ROOM</span> <span class="o">=</span> <span class="s1">&#39;urgent_room&#39;</span>           <span class="c1"># Transition for room surveillance</span>
+<span class="n">TRANS_NO_URGENT_ROOM</span> <span class="o">=</span> <span class="s1">&#39;no_urgent_room&#39;</span>     <span class="c1"># Transition to notify that there are not urgent rooms</span>
+
+<span class="c1"># Global variables and flags</span>
+<span class="n">wait_time</span> <span class="o">=</span> <span class="mf">1.5</span>         <span class="c1"># Global variable for the sleeping time</span>
+<span class="n">battery_status</span> <span class="o">=</span> <span class="mi">1</span>      <span class="c1"># Battery flag, 1 means that it is fully charged</span>
+<span class="n">urgency_status</span> <span class="o">=</span> <span class="mi">0</span>      <span class="c1"># Flag to identify the urgent rooms</span>
+<span class="n">world_loaded</span> <span class="o">=</span> <span class="kc">False</span>    <span class="c1"># World flag, False when the map is not loaded, True when map is loaded correctly (pub in world_generator_node)</span>
+<span class="n">wb_sync</span> <span class="o">=</span> <span class="mi">0</span>             <span class="c1"># World-battery synchronization flag for the battery_node</span>
+<span class="n">time_threshold</span> <span class="o">=</span> <span class="mi">20</span>     <span class="c1"># Time threshold to signal the urgency of the rooms</span>
+
+<span class="n">shared_location</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>    <span class="c1"># List of the shared locations given by the connectedTo data property of the OWL</span>
+<span class="n">urgent_rooms</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>       <span class="c1"># List from the query of the individuals in the URGENT class</span>
+<span class="n">robot_position</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>     <span class="c1"># List that contains always one element, which is the robot position in that moment</span>
+<span class="n">timestamp</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>          <span class="c1"># List of the queried timestamp</span>
+
+<span class="c1"># Arguments for loading the ontology</span>
+<span class="n">rp</span> <span class="o">=</span> <span class="n">rospkg</span><span class="o">.</span><span class="n">RosPack</span><span class="p">()</span>
+<span class="n">assignment_path</span> <span class="o">=</span> <span class="n">rp</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="s1">&#39;exprob_surveillance&#39;</span><span class="p">)</span>
+<span class="n">WORLD_ONTOLOGY_FILE_PATH</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">assignment_path</span><span class="p">,</span> <span class="s2">&quot;topological_map&quot;</span><span class="p">,</span> <span class="s2">&quot;world_surveillance.owl&quot;</span><span class="p">)</span> <span class="c1"># also used for debugging the ontology</span>
+<span class="n">WEB_PATH</span> <span class="o">=</span> <span class="s1">&#39;http://bnc/exp-rob-lab/2022-23&#39;</span>
+
+<span class="c1"># Colors for messages</span>
+<span class="k">class</span> <span class="nc">bcolors</span><span class="p">:</span>
+    <span class="n">BATTERY</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\033</span><span class="s1">[96m&#39;</span>
+    <span class="n">STATUS</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\033</span><span class="s1">[92m&#39;</span>
+    <span class="n">MOVING</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\033</span><span class="s1">[93m&#39;</span>
+    <span class="n">URGENT</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\033</span><span class="s1">[91m&#39;</span>
+    <span class="n">ENDC</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\033</span><span class="s1">[0m&#39;</span>
+
+
+<div class="viewcode-block" id="Build_world"><a class="viewcode-back" href="../../index.html#scripts.fsm_behaviour.Build_world">[docs]</a><span class="k">class</span> <span class="nc">Build_world</span><span class="p">(</span><span class="n">smach</span><span class="o">.</span><span class="n">State</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class that defines the ``BUILD_WORLD`` state, in which the code waits for the enviroment to be created.</span>
+<span class="sd">    When the map is received and loaded the ``world_loaded`` boolean variable will be set to True, the robot will enter in </span>
+<span class="sd">    the Corridor and the outcome *TRANS_WORLD_DONE* will make the state end to switch to the next state ``NO_EMERGENCY``.</span>
+
+<span class="sd">    Args</span>
+<span class="sd">        smachState: State base interface</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">        TRANS_WAITING_MAP: transition that will keep the FSM active in this state</span>
+<span class="sd">        TRANS_WORLD_DONE: transition condition that will make this state end and go to the new next state ``NO_EMERGENCY``</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">helper</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">		Method that initializes the state ``BUILD_WORLD``</span>
+<span class="sd">		</span>
+<span class="sd">		Args:</span>
+<span class="sd">			self: instance of the current class</span>
+
+<span class="sd">		&quot;&quot;&quot;</span>
+
+        <span class="n">smach</span><span class="o">.</span><span class="n">State</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">outcomes</span><span class="o">=</span><span class="p">[</span><span class="n">TRANS_WORLD_DONE</span><span class="p">,</span> 
+                                             <span class="n">TRANS_WAITING_MAP</span><span class="p">,</span>
+                                             <span class="n">TRANS_BATTERY_LOW</span><span class="p">,</span>
+                                             <span class="n">TRANS_BATTERY_CHARGED</span><span class="p">,</span>
+                                             <span class="n">TRANS_URGENT_ROOM</span><span class="p">,</span>
+                                             <span class="n">TRANS_NO_URGENT_ROOM</span><span class="p">])</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">_helper</span> <span class="o">=</span> <span class="n">helper</span>
+    
+<div class="viewcode-block" id="Build_world.execute"><a class="viewcode-back" href="../../index.html#scripts.fsm_behaviour.Build_world.execute">[docs]</a>    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">userdata</span><span class="p">):</span>
+
+        <span class="k">global</span> <span class="n">world_loaded</span>
+        <span class="k">global</span> <span class="n">robot_position</span>
+        <span class="k">global</span> <span class="n">pub_wb_sync</span>
+
+        <span class="c1"># Subscriber of the world flag given by the world_generator_node</span>
+        <span class="n">rospy</span><span class="o">.</span><span class="n">Subscriber</span><span class="p">(</span><span class="n">anm</span><span class="o">.</span><span class="n">TOPIC_WORLD_LOAD</span><span class="p">,</span> <span class="n">Bool</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_helper</span><span class="o">.</span><span class="n">world_callback</span><span class="p">)</span>
+        <span class="c1"># Subscribers to the topic `battery_signal`</span>
+        <span class="n">rospy</span><span class="o">.</span><span class="n">Subscriber</span><span class="p">(</span><span class="n">anm</span><span class="o">.</span><span class="n">TOPIC_BATTERY_SIGNAL</span><span class="p">,</span> <span class="n">Bool</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_helper</span><span class="o">.</span><span class="n">battery_callback</span><span class="p">)</span> <span class="c1"># battery flag (battery_status)</span>
+        <span class="c1"># Publisher for the sync between world and battery</span>
+        <span class="n">pub_wb_sync</span> <span class="o">=</span> <span class="n">rospy</span><span class="o">.</span><span class="n">Publisher</span><span class="p">(</span><span class="n">anm</span><span class="o">.</span><span class="n">TOPIC_SYNC_WORLD_BATTERY</span><span class="p">,</span> <span class="n">Bool</span><span class="p">,</span> <span class="n">queue_size</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+
+        <span class="n">rospy</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">wait_time</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">-------- Executing state BUILD WORLD --------</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Main Behaviuor of the state</span>
+        <span class="c1"># If the world is not created yet, the battery node doesn&#39;t start its execution and the FSM remains in this state</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_helper</span><span class="o">.</span><span class="n">world_loaded</span> <span class="o">==</span> <span class="kc">False</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Creating world ... </span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">wb_sync</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">pub_wb_sync</span><span class="o">.</span><span class="n">publish</span><span class="p">(</span><span class="n">wb_sync</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">TRANS_WAITING_MAP</span>
+        <span class="c1"># if the world is created, the WORLD ONTOLOGY is loaded and start the sync with the battery node. The FSM goes to the next state.</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_helper</span><span class="o">.</span><span class="n">world_loaded</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;World created!&quot;</span><span class="p">)</span>
+            <span class="c1"># client commands of the armor_api</span>
+            <span class="n">client</span> <span class="o">=</span> <span class="n">ArmorClient</span><span class="p">(</span><span class="s2">&quot;example&quot;</span><span class="p">,</span> <span class="s2">&quot;ontoRef&quot;</span><span class="p">)</span> 
+            <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;LOAD&#39;</span><span class="p">,</span><span class="s1">&#39;FILE&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,[</span><span class="n">WORLD_ONTOLOGY_FILE_PATH</span><span class="p">,</span> <span class="n">WEB_PATH</span><span class="p">,</span> <span class="s1">&#39;true&#39;</span><span class="p">,</span> <span class="s1">&#39;PELLET&#39;</span><span class="p">,</span> <span class="s1">&#39;false&#39;</span><span class="p">])</span>
+            <span class="c1"># manipulation of the Robot1, moved into corridor C1 from the intial room E</span>
+            <span class="n">client</span><span class="o">.</span><span class="n">manipulation</span><span class="o">.</span><span class="n">replace_objectprop_b2_ind</span><span class="p">(</span><span class="s1">&#39;isIn&#39;</span><span class="p">,</span> <span class="s1">&#39;Robot1&#39;</span><span class="p">,</span> <span class="s1">&#39;C1&#39;</span><span class="p">,</span> <span class="n">anm</span><span class="o">.</span><span class="n">INIT_LOCATION</span><span class="p">)</span>
+            <span class="c1"># Reasoning OWL</span>
+            <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REASON&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,[</span><span class="s1">&#39;&#39;</span><span class="p">])</span>
+            <span class="c1"># Query from the ontology and find the actual robot position</span>
+            <span class="n">query_position</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;QUERY&#39;</span><span class="p">,</span><span class="s1">&#39;OBJECTPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;isIn&#39;</span><span class="p">,</span><span class="s1">&#39;Robot1&#39;</span><span class="p">])</span>
+            <span class="n">robot_position</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_helper</span><span class="o">.</span><span class="n">robot_location</span><span class="p">(</span><span class="n">query_position</span><span class="o">.</span><span class="n">queried_objects</span><span class="p">)</span>
+            <span class="c1"># Output to visualize in the terminal the actual position of the robot</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">bcolors</span><span class="o">.</span><span class="n">STATUS</span><span class="si">}</span><span class="s2">Actually the robot is in: </span><span class="si">{</span><span class="n">bcolors</span><span class="o">.</span><span class="n">ENDC</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">robot_position</span><span class="p">)</span>
+
+            <span class="c1"># Since the world is created and loaded correctly, set and publish the sync flag</span>
+            <span class="n">wb_sync</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="n">pub_wb_sync</span><span class="o">.</span><span class="n">publish</span><span class="p">(</span><span class="n">wb_sync</span><span class="p">)</span>
+            
+            <span class="k">return</span> <span class="n">TRANS_WORLD_DONE</span></div></div>
+
+<div class="viewcode-block" id="No_emergency"><a class="viewcode-back" href="../../index.html#scripts.fsm_behaviour.No_emergency">[docs]</a><span class="k">class</span> <span class="nc">No_emergency</span><span class="p">(</span><span class="n">smach</span><span class="o">.</span><span class="n">State</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class that defines the ``NO_EMERGENCY`` state.</span>
+<span class="sd">    The robot will stay in the corridors until any room becomes **URGENT**.</span>
+
+<span class="sd">    The logic is:</span>
+<span class="sd">        - the robot will start in one corridor;</span>
+<span class="sd">        - if no room is URGENT, the robot stays in the corridor 3 seconds and change to the other corridor with the function ``motion_control`` in :mod:`state_machine_helper`</span>
+<span class="sd">        - if one or more rooms becomes *URGENT*, the FSM goes to the state ``SURVEILLANCE``.</span>
+
+<span class="sd">    **Important**: the state gets notified by the ``battery_callback`` in :mod:`battery` which is the callback of the topic ``/battery_signal`` with higher priority. </span>
+<span class="sd">    This interrupt any other action performed in the other states.</span>
+<span class="sd">    </span>
+<span class="sd">    Args</span>
+<span class="sd">        smachState: State base interface</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">        TRANS_BATTERY_LOW: transition that change status going to the ``RECHARGING``</span>
+<span class="sd">        TRANS_URGENT_ROOM: transition that will make this state end and go to the ``SURVEILLANCE``</span>
+<span class="sd">        TRANS_NO_URGENT_ROOM: loop transition that will keep the FSM active in this state</span>
+<span class="sd">        </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">helper</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">		Method that initializes the state ``NO_EMERGENCY``</span>
+<span class="sd">		</span>
+<span class="sd">		Args:</span>
+<span class="sd">			self: instance of the current class</span>
+
+<span class="sd">		&quot;&quot;&quot;</span>
+
+        <span class="n">smach</span><span class="o">.</span><span class="n">State</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">outcomes</span><span class="o">=</span><span class="p">[</span><span class="n">TRANS_WORLD_DONE</span><span class="p">,</span> 
+                                             <span class="n">TRANS_WAITING_MAP</span><span class="p">,</span>
+                                             <span class="n">TRANS_BATTERY_LOW</span><span class="p">,</span>
+                                             <span class="n">TRANS_BATTERY_CHARGED</span><span class="p">,</span>
+                                             <span class="n">TRANS_URGENT_ROOM</span><span class="p">,</span>
+                                             <span class="n">TRANS_NO_URGENT_ROOM</span><span class="p">])</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">_helper</span> <span class="o">=</span> <span class="n">helper</span>
+
+<div class="viewcode-block" id="No_emergency.execute"><a class="viewcode-back" href="../../index.html#scripts.fsm_behaviour.No_emergency.execute">[docs]</a>    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">userdata</span><span class="p">):</span>
+
+        <span class="k">global</span> <span class="n">urgent_rooms</span>
+        <span class="k">global</span> <span class="n">robot_position</span>
+        <span class="k">global</span> <span class="n">time_threshold</span>
+
+        <span class="c1"># Subscribers to the topic `battery_signal`</span>
+        <span class="n">rospy</span><span class="o">.</span><span class="n">Subscriber</span><span class="p">(</span><span class="n">anm</span><span class="o">.</span><span class="n">TOPIC_BATTERY_SIGNAL</span><span class="p">,</span> <span class="n">Bool</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_helper</span><span class="o">.</span><span class="n">battery_callback</span><span class="p">)</span> <span class="c1"># battery flag (battery_status)</span>
+
+        <span class="n">rospy</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">wait_time</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">-------- Executing state NO EMERGENCY --------</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="c1"># client commands of the armor_api</span>
+        <span class="n">client</span> <span class="o">=</span> <span class="n">ArmorClient</span><span class="p">(</span><span class="s2">&quot;example&quot;</span><span class="p">,</span> <span class="s2">&quot;ontoRef&quot;</span><span class="p">)</span>
+        <span class="c1"># Reasoning OWL</span>
+        <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REASON&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,[</span><span class="s1">&#39;&#39;</span><span class="p">])</span>
+        <span class="c1"># Query from the ontology and find the actual robot position</span>
+        <span class="n">query_position</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;QUERY&#39;</span><span class="p">,</span><span class="s1">&#39;OBJECTPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;isIn&#39;</span><span class="p">,</span><span class="s1">&#39;Robot1&#39;</span><span class="p">])</span>
+        <span class="n">robot_position</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_helper</span><span class="o">.</span><span class="n">robot_location</span><span class="p">(</span><span class="n">query_position</span><span class="o">.</span><span class="n">queried_objects</span><span class="p">)</span>
+        <span class="c1"># Output to visualize in the terminal the actual position of the robot</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">bcolors</span><span class="o">.</span><span class="n">STATUS</span><span class="si">}</span><span class="s2">Actually the robot is in: </span><span class="si">{</span><span class="n">bcolors</span><span class="o">.</span><span class="n">ENDC</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">robot_position</span><span class="p">)</span>
+
+
+        <span class="c1"># Procedure for checking if there are some urgent rooms as long as the robot is in the corridors</span>
+        <span class="n">locations_list</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;R1&#39;</span><span class="p">,</span> <span class="s1">&#39;R2&#39;</span><span class="p">,</span> <span class="s1">&#39;R3&#39;</span><span class="p">,</span> <span class="s1">&#39;R4&#39;</span><span class="p">]</span>
+                
+        <span class="k">for</span> <span class="n">room</span> <span class="ow">in</span> <span class="n">locations_list</span><span class="p">:</span>
+            <span class="c1"># compute the current time</span>
+            <span class="n">current_time</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()))</span>
+            <span class="c1"># query the ontology about the room&#39;s object property `visitedAt` (time information), extract in old_room_rime</span>
+            <span class="n">room_time</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;QUERY&#39;</span><span class="p">,</span><span class="s1">&#39;DATAPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;visitedAt&#39;</span><span class="p">,</span> <span class="n">room</span><span class="p">])</span>
+            <span class="n">old_room_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_helper</span><span class="o">.</span><span class="n">time_set</span><span class="p">(</span><span class="n">room_time</span><span class="o">.</span><span class="n">queried_objects</span><span class="p">)</span>
+            
+            <span class="c1"># cast the time values (string) to integer values and check if the threshold has been exceeded</span>
+            <span class="c1"># if yes, the transition to the urgent rooms is returned</span>
+            <span class="k">if</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">current_time</span><span class="p">)</span><span class="o">-</span><span class="nb">int</span><span class="p">(</span><span class="n">old_room_time</span><span class="p">))</span> <span class="o">&gt;</span> <span class="n">time_threshold</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="si">{</span><span class="n">bcolors</span><span class="o">.</span><span class="n">URGENT</span><span class="si">}</span><span class="s2">Warning: There are some urgent rooms!</span><span class="si">{</span><span class="n">bcolors</span><span class="o">.</span><span class="n">ENDC</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="c1"># query the ontology about the robot&#39;s object property `now` (time information), extract in old_rob_time</span>
+                <span class="n">rob_time</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;QUERY&#39;</span><span class="p">,</span><span class="s1">&#39;DATAPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;now&#39;</span><span class="p">,</span> <span class="s1">&#39;Robot1&#39;</span><span class="p">])</span>
+                <span class="n">old_rob_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_helper</span><span class="o">.</span><span class="n">time_set</span><span class="p">(</span><span class="n">rob_time</span><span class="o">.</span><span class="n">queried_objects</span><span class="p">)</span>
+                <span class="c1"># compute the current time</span>
+                <span class="n">current_time</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()))</span>
+                <span class="c1"># replace the old_rob_time with the new value (current_time) of the robot&#39;s object property `now`</span>
+                <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REPLACE&#39;</span><span class="p">,</span><span class="s1">&#39;DATAPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;now&#39;</span><span class="p">,</span> <span class="s1">&#39;Robot1&#39;</span><span class="p">,</span> <span class="s1">&#39;Long&#39;</span><span class="p">,</span> <span class="n">current_time</span><span class="p">,</span> <span class="n">old_rob_time</span><span class="p">])</span>
+                <span class="c1"># Reasoning OWL</span>
+                <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REASON&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,[</span><span class="s1">&#39;&#39;</span><span class="p">])</span>
+                <span class="c1"># query the ontology about the room&#39;s object property `visitedAt` (time information), extract in old_room_rime</span>
+                <span class="n">room_time</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;QUERY&#39;</span><span class="p">,</span><span class="s1">&#39;DATAPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;visitedAt&#39;</span><span class="p">,</span> <span class="n">room</span><span class="p">])</span>
+                <span class="n">old_room_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_helper</span><span class="o">.</span><span class="n">time_set</span><span class="p">(</span><span class="n">room_time</span><span class="o">.</span><span class="n">queried_objects</span><span class="p">)</span>
+                <span class="c1"># Reasoning OWL</span>
+                <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REASON&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,[</span><span class="s1">&#39;&#39;</span><span class="p">])</span>
+
+                <span class="c1"># list of the urgent rooms</span>
+                <span class="n">urgent_rooms</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_helper</span><span class="o">.</span><span class="n">urgency</span><span class="p">()</span>
+                <span class="c1"># Output to visualize in the terminal the urgent rooms</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">bcolors</span><span class="o">.</span><span class="n">URGENT</span><span class="si">}</span><span class="s2">The urgent rooms are: </span><span class="si">{</span><span class="n">bcolors</span><span class="o">.</span><span class="n">ENDC</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">urgent_rooms</span><span class="p">)</span>
+
+                <span class="k">return</span> <span class="n">TRANS_URGENT_ROOM</span>
+
+        <span class="c1"># Main Behaviuor of the state</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_helper</span><span class="o">.</span><span class="n">battery_status</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span> <span class="c1"># battery conditions check, that task has the higher priority</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_helper</span><span class="o">.</span><span class="n">urgency_status</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">:</span> <span class="c1"># second condition, check if there are some urgent rooms</span>
+                <span class="k">if</span> <span class="n">robot_position</span> <span class="o">==</span> <span class="s1">&#39;C1&#39;</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">bcolors</span><span class="o">.</span><span class="n">MOVING</span><span class="si">}</span><span class="s2">The Robot is in C1, should go in C2</span><span class="si">{</span><span class="n">bcolors</span><span class="o">.</span><span class="n">ENDC</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+                    <span class="n">rospy</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+
+                    <span class="c1"># call function to change the position of the robot (from actual position to the desired one)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_helper</span><span class="o">.</span><span class="n">motion_control</span><span class="p">(</span><span class="n">robot_position</span><span class="p">,</span> <span class="s1">&#39;C2&#39;</span><span class="p">)</span>
+                    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REASON&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,[</span><span class="s1">&#39;&#39;</span><span class="p">])</span>
+                    
+                    <span class="k">return</span> <span class="n">TRANS_NO_URGENT_ROOM</span>
+                
+                <span class="k">elif</span> <span class="n">robot_position</span> <span class="o">==</span> <span class="s2">&quot;C2&quot;</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">bcolors</span><span class="o">.</span><span class="n">MOVING</span><span class="si">}</span><span class="s2">The Robot is in C2, should go in C1</span><span class="si">{</span><span class="n">bcolors</span><span class="o">.</span><span class="n">ENDC</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+                    <span class="n">rospy</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+                    
+                    <span class="c1"># call function to change the position of the robot (from actual position to the desired one)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_helper</span><span class="o">.</span><span class="n">motion_control</span><span class="p">(</span><span class="n">robot_position</span><span class="p">,</span> <span class="s1">&#39;C1&#39;</span><span class="p">)</span>
+                    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REASON&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,[</span><span class="s1">&#39;&#39;</span><span class="p">])</span>
+                    
+                    <span class="k">return</span> <span class="n">TRANS_NO_URGENT_ROOM</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_helper</span><span class="o">.</span><span class="n">motion_control</span><span class="p">(</span><span class="n">robot_position</span><span class="p">,</span> <span class="s1">&#39;C1&#39;</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="n">TRANS_NO_URGENT_ROOM</span>                
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># there are some urgent rooms, go to the SURVEILLANCE state</span>
+                <span class="k">return</span> <span class="n">TRANS_URGENT_ROOM</span>
+        <span class="k">else</span> <span class="p">:</span>
+            <span class="c1"># the battery charge is low, go to the RECHARGING state</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">bcolors</span><span class="o">.</span><span class="n">BATTERY</span><span class="si">}</span><span class="s2">Warning: the battery charge is low!</span><span class="si">{</span><span class="n">bcolors</span><span class="o">.</span><span class="n">ENDC</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">TRANS_BATTERY_LOW</span></div></div>
+
+<div class="viewcode-block" id="Recharging"><a class="viewcode-back" href="../../index.html#scripts.fsm_behaviour.Recharging">[docs]</a><span class="k">class</span> <span class="nc">Recharging</span><span class="p">(</span><span class="n">smach</span><span class="o">.</span><span class="n">State</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class that defines the ``RECHARGING`` state.</span>
+<span class="sd">    The battery charge is low, advertised by ``battery_callback`` in :mod:`battery`, which will modify the variable flag ``battery_status``.</span>
+<span class="sd">    </span>
+<span class="sd">    Args</span>
+<span class="sd">        smachState: State base interface</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">        TRANS_BATTERY_CHARGED: transition that changes status, going back to the ``NO_EMERGENCY`` state</span>
+<span class="sd">        TRANS_BATTERY_LOW: loop transition that will keep the FSM active in this state as long as the battery becomes fully recharged</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">helper</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">		Method that initializes the state ``RECHARGING``</span>
+<span class="sd">		</span>
+<span class="sd">		Args:</span>
+<span class="sd">			self: instance of the current class</span>
+
+<span class="sd">		&quot;&quot;&quot;</span>
+
+        <span class="n">smach</span><span class="o">.</span><span class="n">State</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">outcomes</span><span class="o">=</span><span class="p">[</span><span class="n">TRANS_WORLD_DONE</span><span class="p">,</span> 
+                                             <span class="n">TRANS_WAITING_MAP</span><span class="p">,</span>
+                                             <span class="n">TRANS_BATTERY_LOW</span><span class="p">,</span>
+                                             <span class="n">TRANS_BATTERY_CHARGED</span><span class="p">,</span>
+                                             <span class="n">TRANS_URGENT_ROOM</span><span class="p">,</span>
+                                             <span class="n">TRANS_NO_URGENT_ROOM</span><span class="p">])</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">_helper</span> <span class="o">=</span> <span class="n">helper</span>
+
+<div class="viewcode-block" id="Recharging.execute"><a class="viewcode-back" href="../../index.html#scripts.fsm_behaviour.Recharging.execute">[docs]</a>    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">userdata</span><span class="p">):</span>
+
+        <span class="k">global</span> <span class="n">robot_position</span>
+
+        <span class="c1"># Subscribers to the topic `battery_signal`</span>
+        <span class="n">rospy</span><span class="o">.</span><span class="n">Subscriber</span><span class="p">(</span><span class="n">anm</span><span class="o">.</span><span class="n">TOPIC_BATTERY_SIGNAL</span><span class="p">,</span> <span class="n">Bool</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_helper</span><span class="o">.</span><span class="n">battery_callback</span><span class="p">)</span> <span class="c1"># battery flag (battery_status)</span>
+        
+        <span class="c1"># client commands of the armor_api</span>
+        <span class="n">client</span> <span class="o">=</span> <span class="n">ArmorClient</span><span class="p">(</span><span class="s2">&quot;example&quot;</span><span class="p">,</span> <span class="s2">&quot;ontoRef&quot;</span><span class="p">)</span>
+        <span class="c1"># Reasoning OWL</span>
+        <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REASON&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,[</span><span class="s1">&#39;&#39;</span><span class="p">])</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">-------- Executing state RECHARGING --------</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        
+        <span class="n">query_position</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;QUERY&#39;</span><span class="p">,</span><span class="s1">&#39;OBJECTPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;isIn&#39;</span><span class="p">,</span><span class="s1">&#39;Robot1&#39;</span><span class="p">])</span>
+        <span class="n">robot_position</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_helper</span><span class="o">.</span><span class="n">robot_location</span><span class="p">(</span><span class="n">query_position</span><span class="o">.</span><span class="n">queried_objects</span><span class="p">)</span>
+
+        <span class="n">rospy</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">wait_time</span><span class="p">)</span>
+        
+        <span class="c1"># Main Behaviuor of the state</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_helper</span><span class="o">.</span><span class="n">battery_status</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">bcolors</span><span class="o">.</span><span class="n">BATTERY</span><span class="si">}</span><span class="s2">Battery recharging ... </span><span class="si">{</span><span class="n">bcolors</span><span class="o">.</span><span class="n">ENDC</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="c1"># call function to change the position of the robot (from actual position to the recharging room, E)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_helper</span><span class="o">.</span><span class="n">motion_control</span><span class="p">(</span><span class="n">robot_position</span><span class="p">,</span> <span class="n">anm</span><span class="o">.</span><span class="n">CHARGE_LOCATION</span><span class="p">)</span>
+            <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REASON&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,[</span><span class="s1">&#39;&#39;</span><span class="p">])</span>
+            
+            <span class="k">return</span> <span class="n">TRANS_BATTERY_LOW</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">bcolors</span><span class="o">.</span><span class="n">BATTERY</span><span class="si">}</span><span class="s2">Battery charging complete! </span><span class="si">{</span><span class="n">bcolors</span><span class="o">.</span><span class="n">ENDC</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="c1"># the battery charge is fully recharged, go to the NO_EMERGENCY state</span>
+            <span class="k">return</span> <span class="n">TRANS_BATTERY_CHARGED</span></div></div>
+
+<div class="viewcode-block" id="Surveillance"><a class="viewcode-back" href="../../index.html#scripts.fsm_behaviour.Surveillance">[docs]</a><span class="k">class</span> <span class="nc">Surveillance</span><span class="p">(</span><span class="n">smach</span><span class="o">.</span><span class="n">State</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class that defines the ``SURVEILLANCE`` state. Only when the ``urgency_status`` variable is ``1`` the robot must visit the urgency rooms.</span>
+<span class="sd">    It calls the ``motion_control`` function in :mod:`state_machine_helper` to move the robot and gets advertised by the ``battery_callback`` in :mod:`battery` in case of low battery.</span>
+
+<span class="sd">    Args</span>
+<span class="sd">        smachState: State base interface</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">        TRANS_BATTERY_LOW: transition that change status to the ``RECHARGING`` state</span>
+<span class="sd">        TRANS_NO_URGENT_ROOM: transition that specifies that no other room are urgent anymore and changes status to ``NO_EMERGENCY`` state</span>
+<span class="sd">        TRANS_URGENT_ROOM: loop transition that will keep the FSM active in this state</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">helper</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">		Method that initializes the state ``SURVEILLANCE``</span>
+<span class="sd">		</span>
+<span class="sd">		Args:</span>
+<span class="sd">			self: instance of the current class</span>
+
+<span class="sd">		&quot;&quot;&quot;</span>
+
+        <span class="n">smach</span><span class="o">.</span><span class="n">State</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">outcomes</span><span class="o">=</span><span class="p">[</span><span class="n">TRANS_WORLD_DONE</span><span class="p">,</span> 
+                                             <span class="n">TRANS_WAITING_MAP</span><span class="p">,</span>
+                                             <span class="n">TRANS_BATTERY_LOW</span><span class="p">,</span>
+                                             <span class="n">TRANS_BATTERY_CHARGED</span><span class="p">,</span>
+                                             <span class="n">TRANS_URGENT_ROOM</span><span class="p">,</span>
+                                             <span class="n">TRANS_NO_URGENT_ROOM</span><span class="p">])</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">_helper</span> <span class="o">=</span> <span class="n">helper</span>
+        
+<div class="viewcode-block" id="Surveillance.execute"><a class="viewcode-back" href="../../index.html#scripts.fsm_behaviour.Surveillance.execute">[docs]</a>    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">userdata</span><span class="p">):</span>
+
+        <span class="k">global</span> <span class="n">urgency_status</span>
+        <span class="k">global</span> <span class="n">urgent_rooms</span>
+        <span class="k">global</span> <span class="n">robot_position</span>
+
+        <span class="c1"># Subscribers to the topic `battery_signal`</span>
+        <span class="n">rospy</span><span class="o">.</span><span class="n">Subscriber</span><span class="p">(</span><span class="n">anm</span><span class="o">.</span><span class="n">TOPIC_BATTERY_SIGNAL</span><span class="p">,</span> <span class="n">Bool</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_helper</span><span class="o">.</span><span class="n">battery_callback</span><span class="p">)</span> <span class="c1"># battery flag (battery_status)</span>
+
+        <span class="c1"># client commands of the armor_api</span>
+        <span class="n">client</span> <span class="o">=</span> <span class="n">ArmorClient</span><span class="p">(</span><span class="s2">&quot;example&quot;</span><span class="p">,</span> <span class="s2">&quot;ontoRef&quot;</span><span class="p">)</span>
+        <span class="c1"># reasoning OWL</span>
+        <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REASON&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,[</span><span class="s1">&#39;&#39;</span><span class="p">])</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">-------- Executing state SURVEILLANCE --------</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="c1"># list of the urgent rooms</span>
+        <span class="n">urgent_rooms</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_helper</span><span class="o">.</span><span class="n">urgency</span><span class="p">()</span>
+        <span class="c1"># Output to visualize in the terminal the urgent rooms</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">bcolors</span><span class="o">.</span><span class="n">URGENT</span><span class="si">}</span><span class="s2">The urgent rooms are: </span><span class="si">{</span><span class="n">bcolors</span><span class="o">.</span><span class="n">ENDC</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">urgent_rooms</span><span class="p">)</span>
+
+        <span class="n">rospy</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">wait_time</span><span class="p">)</span>
+        
+        <span class="c1"># Main Behaviuor of the state</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_helper</span><span class="o">.</span><span class="n">battery_status</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>  
+            <span class="c1"># the battery charge is low</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">bcolors</span><span class="o">.</span><span class="n">BATTERY</span><span class="si">}</span><span class="s2">Warning: the battery charge is low!</span><span class="si">{</span><span class="n">bcolors</span><span class="o">.</span><span class="n">ENDC</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">TRANS_BATTERY_LOW</span>
+        
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_helper</span><span class="o">.</span><span class="n">urgency_status</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1"># there are not urgent rooms </span>
+            <span class="k">return</span> <span class="n">TRANS_NO_URGENT_ROOM</span>
+        
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_helper</span><span class="o">.</span><span class="n">urgency_status</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="c1"># there are some urgent rooms</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">urgent_rooms</span> <span class="p">:</span>
+                <span class="c1"># check which are the urgent rooms in the list that must be surveillanced by the robot</span>
+                <span class="k">if</span> <span class="s2">&quot;R1&quot;</span> <span class="ow">in</span> <span class="n">i</span><span class="p">:</span>
+                    <span class="n">query_position</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;QUERY&#39;</span><span class="p">,</span><span class="s1">&#39;OBJECTPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;isIn&#39;</span><span class="p">,</span><span class="s1">&#39;Robot1&#39;</span><span class="p">])</span>
+                    <span class="n">robot_position</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_helper</span><span class="o">.</span><span class="n">robot_location</span><span class="p">(</span><span class="n">query_position</span><span class="o">.</span><span class="n">queried_objects</span><span class="p">)</span>
+                    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REASON&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,[</span><span class="s1">&#39;&#39;</span><span class="p">])</span>
+                    <span class="n">new_pose</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_helper</span><span class="o">.</span><span class="n">motion_control</span><span class="p">(</span><span class="n">robot_position</span><span class="p">,</span><span class="s1">&#39;R1&#39;</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">bcolors</span><span class="o">.</span><span class="n">STATUS</span><span class="si">}</span><span class="s2">The room surveillanced by the robot is: </span><span class="si">{</span><span class="n">bcolors</span><span class="o">.</span><span class="n">ENDC</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">new_pose</span><span class="p">)</span>
+                    <span class="k">break</span>
+                
+                <span class="k">elif</span> <span class="s2">&quot;R2&quot;</span> <span class="ow">in</span> <span class="n">i</span><span class="p">:</span>
+                    <span class="n">query_position</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;QUERY&#39;</span><span class="p">,</span><span class="s1">&#39;OBJECTPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;isIn&#39;</span><span class="p">,</span><span class="s1">&#39;Robot1&#39;</span><span class="p">])</span>
+                    <span class="n">robot_position</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_helper</span><span class="o">.</span><span class="n">robot_location</span><span class="p">(</span><span class="n">query_position</span><span class="o">.</span><span class="n">queried_objects</span><span class="p">)</span>
+                    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REASON&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,[</span><span class="s1">&#39;&#39;</span><span class="p">])</span>
+                    <span class="n">new_pose</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_helper</span><span class="o">.</span><span class="n">motion_control</span><span class="p">(</span><span class="n">robot_position</span><span class="p">,</span><span class="s1">&#39;R2&#39;</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">bcolors</span><span class="o">.</span><span class="n">STATUS</span><span class="si">}</span><span class="s2">The room surveillanced by the robot is: </span><span class="si">{</span><span class="n">bcolors</span><span class="o">.</span><span class="n">ENDC</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">new_pose</span><span class="p">)</span>
+                    <span class="k">break</span>
+                
+                <span class="k">elif</span> <span class="s2">&quot;R3&quot;</span> <span class="ow">in</span> <span class="n">i</span><span class="p">:</span>
+                    <span class="n">query_position</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;QUERY&#39;</span><span class="p">,</span><span class="s1">&#39;OBJECTPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;isIn&#39;</span><span class="p">,</span><span class="s1">&#39;Robot1&#39;</span><span class="p">])</span>
+                    <span class="n">robot_position</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_helper</span><span class="o">.</span><span class="n">robot_location</span><span class="p">(</span><span class="n">query_position</span><span class="o">.</span><span class="n">queried_objects</span><span class="p">)</span>
+                    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REASON&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,[</span><span class="s1">&#39;&#39;</span><span class="p">])</span>
+                    <span class="n">new_pose</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_helper</span><span class="o">.</span><span class="n">motion_control</span><span class="p">(</span><span class="n">robot_position</span><span class="p">,</span><span class="s1">&#39;R3&#39;</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">bcolors</span><span class="o">.</span><span class="n">STATUS</span><span class="si">}</span><span class="s2">The room surveillanced by the robot is: </span><span class="si">{</span><span class="n">bcolors</span><span class="o">.</span><span class="n">ENDC</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">new_pose</span><span class="p">)</span>
+                    <span class="k">break</span>
+                
+                <span class="k">elif</span> <span class="s2">&quot;R4&quot;</span> <span class="ow">in</span> <span class="n">i</span><span class="p">:</span>
+                    <span class="n">query_position</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;QUERY&#39;</span><span class="p">,</span><span class="s1">&#39;OBJECTPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;isIn&#39;</span><span class="p">,</span><span class="s1">&#39;Robot1&#39;</span><span class="p">])</span>
+                    <span class="n">robot_position</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_helper</span><span class="o">.</span><span class="n">robot_location</span><span class="p">(</span><span class="n">query_position</span><span class="o">.</span><span class="n">queried_objects</span><span class="p">)</span>
+                    <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REASON&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,[</span><span class="s1">&#39;&#39;</span><span class="p">])</span>
+                    <span class="n">new_pose</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_helper</span><span class="o">.</span><span class="n">motion_control</span><span class="p">(</span><span class="n">robot_position</span><span class="p">,</span><span class="s1">&#39;R4&#39;</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">bcolors</span><span class="o">.</span><span class="n">STATUS</span><span class="si">}</span><span class="s2">The room surveillanced by the robot is: </span><span class="si">{</span><span class="n">bcolors</span><span class="o">.</span><span class="n">ENDC</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">new_pose</span><span class="p">)</span>
+                    <span class="k">break</span>
+        
+        <span class="k">return</span> <span class="n">TRANS_URGENT_ROOM</span></div></div>
+
+<div class="viewcode-block" id="main"><a class="viewcode-back" href="../../index.html#scripts.fsm_behaviour.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Main function of the Finite State Machine that initializes the node ``fsm_behaviour`` using SMACH modules.</span>
+<span class="sd">    This method create the FSM and specifies the states with the relative transitions.</span>
+<span class="sd">    Since the behaviour of the battery has higher priority with respect to all the other states, here it&#39;s initialized</span>
+<span class="sd">    the subscriber of the battery topic.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Before to initialize the ROS node waits some time to allow the `world_generator` node to </span>
+    <span class="c1"># create the environment of the world from the ontology (OWL)</span>
+    <span class="n">rospy</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">wait_time</span><span class="p">)</span>
+    <span class="c1"># ROS Node initialization</span>
+    <span class="c1">#rospy.init_node(&#39;fsm_behaviour&#39;)</span>
+    <span class="n">rospy</span><span class="o">.</span><span class="n">init_node</span><span class="p">(</span><span class="n">anm</span><span class="o">.</span><span class="n">NODE_STATE_MACHINE</span><span class="p">,</span> <span class="n">log_level</span><span class="o">=</span><span class="n">rospy</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+    
+    <span class="n">helper</span> <span class="o">=</span> <span class="n">Helper</span><span class="p">()</span>
+    
+    <span class="c1"># Create the Finite State Machine</span>
+    <span class="n">sm</span> <span class="o">=</span> <span class="n">smach</span><span class="o">.</span><span class="n">StateMachine</span><span class="p">(</span><span class="n">outcomes</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;interface&#39;</span><span class="p">])</span>
+    
+    <span class="c1"># Open the container</span>
+    <span class="k">with</span> <span class="n">sm</span><span class="p">:</span>
+        <span class="c1"># Add states to the container</span>
+        <span class="n">smach</span><span class="o">.</span><span class="n">StateMachine</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">STATE_BUILD_WORLD</span><span class="p">,</span> <span class="n">Build_world</span><span class="p">(</span><span class="n">helper</span><span class="p">),</span> 
+                                <span class="n">transitions</span><span class="o">=</span><span class="p">{</span><span class="n">TRANS_WORLD_DONE</span> <span class="p">:</span> <span class="n">STATE_NO_EMERGENCY</span><span class="p">,</span> 
+                                             <span class="n">TRANS_WAITING_MAP</span> <span class="p">:</span> <span class="n">STATE_BUILD_WORLD</span><span class="p">,</span>
+                                             <span class="n">TRANS_BATTERY_LOW</span> <span class="p">:</span> <span class="n">STATE_BUILD_WORLD</span><span class="p">,</span>
+                                             <span class="n">TRANS_BATTERY_CHARGED</span> <span class="p">:</span> <span class="n">STATE_BUILD_WORLD</span><span class="p">,</span>
+                                             <span class="n">TRANS_URGENT_ROOM</span> <span class="p">:</span> <span class="n">STATE_BUILD_WORLD</span><span class="p">,</span>
+                                             <span class="n">TRANS_NO_URGENT_ROOM</span> <span class="p">:</span> <span class="n">STATE_BUILD_WORLD</span><span class="p">})</span>
+        
+        <span class="n">smach</span><span class="o">.</span><span class="n">StateMachine</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">STATE_NO_EMERGENCY</span><span class="p">,</span> <span class="n">No_emergency</span><span class="p">(</span><span class="n">helper</span><span class="p">),</span> 
+                                <span class="n">transitions</span><span class="o">=</span><span class="p">{</span><span class="n">TRANS_WORLD_DONE</span> <span class="p">:</span> <span class="n">STATE_NO_EMERGENCY</span><span class="p">,</span> 
+                                             <span class="n">TRANS_WAITING_MAP</span> <span class="p">:</span> <span class="n">STATE_NO_EMERGENCY</span><span class="p">,</span>
+                                             <span class="n">TRANS_BATTERY_LOW</span> <span class="p">:</span> <span class="n">STATE_RECHARGING</span><span class="p">,</span>
+                                             <span class="n">TRANS_BATTERY_CHARGED</span> <span class="p">:</span> <span class="n">STATE_NO_EMERGENCY</span><span class="p">,</span>
+                                             <span class="n">TRANS_URGENT_ROOM</span> <span class="p">:</span> <span class="n">STATE_SURVEILLANCE</span><span class="p">,</span>
+                                             <span class="n">TRANS_NO_URGENT_ROOM</span> <span class="p">:</span> <span class="n">STATE_NO_EMERGENCY</span><span class="p">})</span>
+        
+        <span class="n">smach</span><span class="o">.</span><span class="n">StateMachine</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">STATE_RECHARGING</span><span class="p">,</span> <span class="n">Recharging</span><span class="p">(</span><span class="n">helper</span><span class="p">),</span> 
+                                <span class="n">transitions</span><span class="o">=</span><span class="p">{</span><span class="n">TRANS_WORLD_DONE</span> <span class="p">:</span> <span class="n">STATE_RECHARGING</span><span class="p">,</span> 
+                                             <span class="n">TRANS_WAITING_MAP</span> <span class="p">:</span> <span class="n">STATE_RECHARGING</span><span class="p">,</span>
+                                             <span class="n">TRANS_BATTERY_LOW</span> <span class="p">:</span> <span class="n">STATE_RECHARGING</span><span class="p">,</span>
+                                             <span class="n">TRANS_BATTERY_CHARGED</span> <span class="p">:</span> <span class="n">STATE_NO_EMERGENCY</span><span class="p">,</span>
+                                             <span class="n">TRANS_URGENT_ROOM</span> <span class="p">:</span> <span class="n">STATE_RECHARGING</span><span class="p">,</span>
+                                             <span class="n">TRANS_NO_URGENT_ROOM</span> <span class="p">:</span> <span class="n">STATE_RECHARGING</span><span class="p">})</span>
+        
+        <span class="n">smach</span><span class="o">.</span><span class="n">StateMachine</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">STATE_SURVEILLANCE</span><span class="p">,</span> <span class="n">Surveillance</span><span class="p">(</span><span class="n">helper</span><span class="p">),</span> 
+                                <span class="n">transitions</span><span class="o">=</span><span class="p">{</span><span class="n">TRANS_WORLD_DONE</span> <span class="p">:</span> <span class="n">STATE_SURVEILLANCE</span><span class="p">,</span> 
+                                             <span class="n">TRANS_WAITING_MAP</span> <span class="p">:</span> <span class="n">STATE_SURVEILLANCE</span><span class="p">,</span>
+                                             <span class="n">TRANS_BATTERY_LOW</span> <span class="p">:</span> <span class="n">STATE_RECHARGING</span><span class="p">,</span>
+                                             <span class="n">TRANS_BATTERY_CHARGED</span> <span class="p">:</span> <span class="n">STATE_SURVEILLANCE</span><span class="p">,</span>
+                                             <span class="n">TRANS_URGENT_ROOM</span> <span class="p">:</span> <span class="n">STATE_SURVEILLANCE</span><span class="p">,</span>
+                                             <span class="n">TRANS_NO_URGENT_ROOM</span> <span class="p">:</span> <span class="n">STATE_NO_EMERGENCY</span><span class="p">})</span>
+    
+    <span class="c1"># Create and start the introspection server for visualization</span>
+    <span class="n">sis</span> <span class="o">=</span> <span class="n">smach_ros</span><span class="o">.</span><span class="n">IntrospectionServer</span><span class="p">(</span><span class="s1">&#39;server_name&#39;</span><span class="p">,</span> <span class="n">sm</span><span class="p">,</span> <span class="s1">&#39;/SM_ROOT&#39;</span><span class="p">)</span>
+    <span class="n">sis</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+    <span class="c1"># Execute the state machine</span>
+    <span class="n">outcome</span> <span class="o">=</span> <span class="n">sm</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span>
+
+    <span class="c1"># Wait for ctrl-c to stop the application</span>
+    <span class="n">rospy</span><span class="o">.</span><span class="n">spin</span><span class="p">()</span>
+    <span class="n">sis</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span></div>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span> 
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Thomas Campagnolo.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
