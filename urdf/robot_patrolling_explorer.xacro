@@ -212,4 +212,49 @@
     <child link="laser"/>
   </joint>
 
+
+  <transmission name="joint_front_right_wheel_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="joint_front_right_wheel">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="motor_front_right_wheel">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+      <mechanicalInterface>1</mechanicalInterface>
+    </actuator>
+  </transmission>
+
+  <transmission name="joint_rear_right_wheel_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="joint_rear_right_wheel">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="motor_rear_right_wheel">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+      <mechanicalInterface>1</mechanicalInterface>
+    </actuator>
+  </transmission>
+
+  <transmission name="joint_front_left_wheel_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="joint_front_left_wheel">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="motor_front_left_wheel">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+      <mechanicalInterface>1</mechanicalInterface>
+    </actuator>
+  </transmission>
+
+  <transmission name="joint_rear_left_wheel_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="joint_rear_left_wheel">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="motor_rear_left_wheel">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+      <mechanicalInterface>1</mechanicalInterface>
+    </actuator>
+  </transmission>
+
 </robot>
