@@ -53,6 +53,9 @@
   <gazebo reference="joint_arm_02">
     <provideFeedback>true</provideFeedback>
   </gazebo>
+  <gazebo reference="joint_arm_03">
+    <provideFeedback>true</provideFeedback>
+  </gazebo>
 
 
 <!-- The ft_sensor plugin -->  
@@ -62,6 +65,7 @@
         <topicName>ft_sensor_topic</topicName>
         <jointName>joint_arm_01</jointName>
         <jointName>joint_arm_02</jointName>
+        <jointName>joint_arm_03</jointName>
     </plugin>
 </gazebo>
 
@@ -74,8 +78,8 @@
 	    <rightFrontJoint>joint_front_right_wheel</rightFrontJoint>
 	    <leftRearJoint>joint_rear_left_wheel</leftRearJoint>
 	    <rightRearJoint>joint_rear_right_wheel</rightRearJoint>
-      <wheelSeparation>0.2</wheelSeparation>
-      <wheelDiameter>0.07</wheelDiameter>
+      <wheelSeparation>0.36</wheelSeparation>
+      <wheelDiameter>0.126</wheelDiameter>
       <torque>20</torque>
       <topicName>cmd_vel</topicName>
       <commandTopic>cmd_vel</commandTopic>
@@ -136,12 +140,12 @@
     <!-- camera -->
   <gazebo reference="camera_link">
     <sensor type="camera" name="camera1">
-      <update_rate>30.0</update_rate>
+      <update_rate>100.0</update_rate>
       <camera name="head">
-        <horizontal_fov>1.53</horizontal_fov>
+        <horizontal_fov>1.57</horizontal_fov>
         <image>
-          <width>1280</width>
-          <height>800</height>
+          <width>1920</width>
+          <height>1080</height>
           <format>R8G8B8</format>
         </image>
         <clip>
@@ -156,8 +160,8 @@
       </camera>
       <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
         <alwaysOn>true</alwaysOn>
-        <updateRate>0.0</updateRate>
-        <cameraName>robot/camera1</cameraName>
+        <updateRate>100.0</updateRate>
+        <cameraName>robot_patrolling_explorer/camera1</cameraName>
         <imageTopicName>image_raw</imageTopicName>
         <cameraInfoTopicName>camera_info</cameraInfoTopicName>
         <frameName>camera_link</frameName>

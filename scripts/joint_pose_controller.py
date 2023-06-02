@@ -41,6 +41,16 @@ def callback_joint2(msg):
     global value_joint2
     value_joint2 = msg.process_value
 
+def callback_joint3(msg):
+    """
+    Callback function for the joint position.
+    
+    Args:
+        - JointControllerState 
+    """
+    global value_joint3
+    value_joint3 = msg.process_value
+
 
 def joint_action():
     # Create ROS node
@@ -61,31 +71,42 @@ def joint_action():
 
     joint2_pose_pub = rospy.Publisher('/robot_patrolling_explorer/joint2_position_controller/command', Float64, queue_size=10)
     rospy.Subscriber("/robot_patrolling_explorer/joint2_position_controller/state", JointControllerState, callback_joint2)
+
+    joint3_pose_pub = rospy.Publisher('/robot_patrolling_explorer/joint3_position_controller/command', Float64, queue_size=10)
+    rospy.Subscriber("/robot_patrolling_explorer/joint3_position_controller/state", JointControllerState, callback_joint3)
     #joint2_pose_pub.publish(0.0)
 
-    while value_joint1 > -3.10:
+    while value_joint1 > -3.099:
         print("Value of joint 1: ", value_joint1)
         joint1_pose_pub.publish(-3.14)
+        joint2_pose_pub.publish(0.70)
+        joint3_pose_pub.publish(0.0)
         
-    while value_joint1 < 2.40:
+    while value_joint1 < 2.399:
         print("Value of joint 1: ", value_joint1)
         joint1_pose_pub.publish(2.40)
+        joint2_pose_pub.publish(0.70)
+        joint3_pose_pub.publish(0.0)
     
 
-    while value_joint2 > -0.47:
+    while value_joint2 > -0.55:
         print("Value of joint 2: ", value_joint2)
-        joint2_pose_pub.publish(-0.47)
+        joint2_pose_pub.publish(-0.57)
+        joint3_pose_pub.publish(0.0)
         
-    if value_joint2 <= -0.45:
-        while value_joint1 > -2.10:
+    if value_joint2 <= -0.55:
+        while value_joint1 > -1.59:
             print("Value of joint 1: ", value_joint1)
-            joint1_pose_pub.publish(-2.10)
+            joint1_pose_pub.publish(-1.60)
+            joint3_pose_pub.publish(0.0)
 
         
         
     
     joint1_pose_pub.publish(0.0)
     joint2_pose_pub.publish(0.0)
+    joint3_pose_pub.publish(0.0)
+    rospy.sleep(10)
     #print("Final value of joint 1: ", value_joint1)
 
 

@@ -41,7 +41,7 @@
     <inertial>
       <mass value="0.05"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.0395416666667" ixy="0" ixz="0" iyy="0.106208333333" iyz="0" izz="0.106208333333"/>
+      <inertia ixx="0.0015416666667" ixy="0" ixz="0" iyy="0.0106208333333" iyz="0" izz="0.0106208333333"/>
     </inertial>
   </link>
 
@@ -60,7 +60,7 @@
     <inertial>
       <mass value="0.1"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.0395416666667" ixy="0" ixz="0" iyy="0.106208333333" iyz="0" izz="0.106208333333"/>
+      <inertia ixx="0.0015416666667" ixy="0" ixz="0" iyy="0.0106208333333" iyz="0" izz="0.0106208333333"/>
     </inertial>
     <!-- body -->
     <collision name="collision_rbot_base">
@@ -95,7 +95,7 @@
   <link name="U_Link">
     <visual>
       <geometry>
-        <box size="0.015 0.03 0.064"/>
+        <box size="0.015 0.03 0.50"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <material name="white"/>
@@ -104,12 +104,12 @@
     <inertial>
       <mass value="0.1"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.0395416666667" ixy="0" ixz="0" iyy="0.106208333333" iyz="0" izz="0.106208333333"/>
+      <inertia ixx="0.0015416666667" ixy="0" ixz="0" iyy="0.0106208333333" iyz="0" izz="0.0106208333333"/>
     </inertial>
     <!-- body -->
     <collision name="collision_U_link">
       <geometry>
-        <box size="0.015 0.03 0.064"/>
+        <box size="0.015 0.03 0.50"/>
       </geometry>
     </collision>
   </link>
@@ -170,7 +170,7 @@
     <inertial>
       <mass value="0.1"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.0395416666667" ixy="0" ixz="0" iyy="0.106208333333" iyz="0" izz="0.106208333333"/>
+      <inertia ixx="0.0015416666667" ixy="0" ixz="0" iyy="0.0106208333333" iyz="0" izz="0.0106208333333"/>
     </inertial>
     <!-- body -->
     <collision name="collision_up_mount">
@@ -191,7 +191,7 @@
     <child link="U_Link"/>
     <axis xyz="0 0 1"/>
     <limit effort="1000.0" lower="-3.14" upper="3.14" velocity="0.5"/>
-    <origin xyz="0 0 0.056"/>
+    <origin xyz="0 0 0.27"/>
   </joint>
 
   <joint name="joint_arm_02" type="revolute">
@@ -199,7 +199,7 @@
     <child link="servo_mid"/>
     <axis xyz="0 1 0"/>
     <limit effort="1000.0" lower="-1.57" upper="1.57" velocity="0.5"/>
-    <origin xyz="0 0 0.036" rpy="0 0 0"/>
+    <origin xyz="0 0 0.25" rpy="0 0 0"/>
   </joint>
 
   <joint name="servo_mid_to_servo_up" type="fixed">

@@ -83,6 +83,9 @@
 
 
   <node name="marker_server" pkg="exprob_robot_patrolling" type="marker_server" />
+  <remap from="/image" to="/robot_patrolling_explorer/camera1/image_raw" />
+  <node name="marker_publisher" pkg="aruco_ros"  type="marker_publisher" launch-prefix="xterm -e">
+  </node>
 
 
 
