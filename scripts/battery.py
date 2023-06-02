@@ -20,9 +20,13 @@ Subscribes  to:
 """
 
 import rospy
+import actionlib
+import random
 from std_msgs.msg import Bool
 
 from armor_api.armor_client import ArmorClient
+from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
+from std_msgs.msg import Bool
 
 # Import constant name defined to structure the architecture
 from exprob_robot_patrolling import architecture_name_mapper as anm
@@ -101,6 +105,17 @@ def battery_recharge(level):
             return battery_status
 
 
+def reset_goal():
+    """
+    Cancels any existing goals using the Action client for the `move_base` action server
+ 
+    """
+    # Action client
+    client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
+    # Wait for the action server 
+    client.wait_for_server()
+    client.cancel_all_goals()
+
 
 def main_battery_behaviour():
     """
@@ -125,9 +140,11 @@ def main_battery_behaviour():
             pub.publish(battery_status)
 
             if battery_status == 0:
+                reset_goal()
                 # the battery level is low
                 battery_status = battery_recharge(battery_level) # recharge cycle
                 pub.publish(battery_status)
+
 
         else:
             # the world is not yet loaded in the FSM

@@ -161,9 +161,10 @@ target_link_libraries(marker_server
 ## in contrast to setup.py, you can choose the destination
 catkin_install_python(
   PROGRAMS
-    scripts/fsm_behaviour.py
+    #scripts/fsm_behaviour.py
     scripts/world_generator.py
-    scripts/battery.py
+    #scripts/battery.py
+    scripts/joint_pose_controller.py
    DESTINATION 
     ${CATKIN_PACKAGE_BIN_DESTINATION}
 )

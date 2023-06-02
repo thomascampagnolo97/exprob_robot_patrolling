@@ -46,6 +46,25 @@
     <material>Gazebo/FlatBlack</material>
   </gazebo>
 
+
+  <gazebo reference="joint_arm_01">
+    <provideFeedback>true</provideFeedback>
+  </gazebo>
+  <gazebo reference="joint_arm_02">
+    <provideFeedback>true</provideFeedback>
+  </gazebo>
+
+
+<!-- The ft_sensor plugin -->  
+<gazebo>
+    <plugin name="ft_sensor" filename="libgazebo_ros_ft_sensor.so">
+        <updateRate>100.0</updateRate>
+        <topicName>ft_sensor_topic</topicName>
+        <jointName>joint_arm_01</jointName>
+        <jointName>joint_arm_02</jointName>
+    </plugin>
+</gazebo>
+
 <!-- robot control -->
 <gazebo>
     <plugin filename="libgazebo_ros_skid_steer_drive.so" name="skid_steer_drive_controller">
@@ -108,7 +127,7 @@
     <!-- arm control -->
   <gazebo>
     <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
-      <robotNamespace>realsense_explorer</robotNamespace>
+      <robotNamespace>robot_patrolling_explorer</robotNamespace>
       <robotSimType>gazebo_ros_control/DefaultRobotHWSim</robotSimType>
       <legacyModeNS>true</legacyModeNS>
     </plugin>

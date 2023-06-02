@@ -29,6 +29,7 @@ Subscribes  to:
 
 import rospkg
 import rospy
+import roslib
 import os
 import time
 import math
@@ -37,13 +38,21 @@ import smach
 import smach_ros
 
 from armor_api.armor_client import ArmorClient
-from std_msgs.msg import Bool
+
+from std_msgs.msg import Bool, Float64
+from geometry_msgs.msg import Twist
+from control_msgs.msg import JointControllerState
+
+
 
 # Import constant name defined to structure the architecture
 from exprob_robot_patrolling import architecture_name_mapper as anm
 
 # Import the class that support the interface of the Finite State Machine, which is available in this file
 from exprob_robot_patrolling.state_machine_helper import Helper
+
+from exprob_robot_patrolling.srv import Get_coordinates
+
 
 
 # States of the Finite State Machine
@@ -73,6 +82,9 @@ urgent_rooms = ''       # List from the query of the individuals in the URGENT c
 robot_position = ''     # List that contains always one element, which is the robot position in that moment
 timestamp = ''          # List of the queried timestamp
 
+coordinates = {}        # Dictionary for the rooms coordinates
+process_value=0
+
 # Arguments for loading the ontology
 rp = rospkg.RosPack()
 assignment_path = rp.get_path('exprob_robot_patrolling')
@@ -86,6 +98,94 @@ class bcolors:
     MOVING = '\033[93m'
     URGENT = '\033[91m'
     ENDC = '\033[0m'
+
+
+def go_to_coordinate(coor):
+    """
+    The :func:go_to_coordinate function moves the robot to the specified coordinates by calling the get_coordinate service. If the service returns that the target coordinates have been reached, the function returns 1. If the target coordinates have not been reached, the function calls itself again to try moving to the target coordinates again.
+
+    Args:
+        - coor: A string representing the key for the desired coordinates in the global dictionary coordinates.
+    
+    Returns:
+        - response.return: An integer indicating whether the target coordinates have been reached (1) or not (0).
+
+    """
+    get_coordinate = rospy.ServiceProxy('get_coordinate', Get_coordinates)
+    response = get_coordinate(coordinates[coor]['X'] , coordinates[coor]['Y'])
+    if response.return_ == 1:
+        print('Location reached')
+    else:
+        print('Location not reached')
+        go_to_coordinate(coor)
+    return response.return_
+
+def setup_Dictionary():
+    """
+    This function initializes the global variable *coordinates* as a dictionary containing 
+    the X and Y coordinates for each room in the list `rooms`. The function does this by calling 
+    the ArmorClient and using the 'QUERY' command to retrieve the X and Y coordinates for each room 
+    from the ontology. The function then adds the room's X and Y coordinates to the coordinates dictionary.
+
+    """
+    global coordinates
+
+    client = ArmorClient("example", "ontoRef")
+
+    rooms = ['R1', 'R2', 'R3', 'R4', 'C1', 'C2', 'E']
+    
+    for i in rooms:
+        req=client.call('QUERY','DATAPROP','IND',['X_point', i])
+        X=float(extract_value(req.queried_objects))
+        req=client.call('QUERY','DATAPROP','IND',['Y_point', i])
+        Y=float(extract_value(req.queried_objects))
+        coordinates[i] = {'X': X, 'Y': Y}
+
+def room_scan():
+    """"
+    This function controls the commands passed to the joints. Joint 1 will rotate 360 degrees to scan the room."
+    
+    """
+    # Create a publisher for the cmd_vel topic
+    print("Scanning..")
+    joint1_pose_pub = rospy.Publisher('/myRob/joint1_position_controller/command', Float64, queue_size=10)
+    rospy.Subscriber("/myRob/joint1_position_controller/state", JointControllerState, callback_scan)
+    joint1_pose_pub.publish(-3.0)
+    while process_value > -2.9:
+        joint1_pose_pub.publish(-3.0)
+    while process_value < 2.9:
+        joint1_pose_pub.publish(3.0)
+    joint1_pose_pub.publish(0.0)
+
+def callback_scan(msg):
+    global process_value
+    process_value = msg.process_value
+
+
+def extract_value(input_list):
+    """
+    Function to rewrite the queried time stamp or coordinate, deleting the not digit part of the string, for both Rooms and Robot's data property
+
+    Args
+        - **list** of queried objects section of the Armor service message
+    
+    Returns
+        all the element between the double quotes
+    
+    """
+    # Extract the string value from the list
+    value_string = input_list[0]
+    # Remove the surrounding quotation marks and the xsd:float type indicator
+    stripped_string = value_string[1:-1].split("^^")[0]
+    # Remove any surrounding quotation marks
+    stripped_string = stripped_string.strip('"')
+    # Convert the string to a float and return it
+    return float(stripped_string)
+
+def common_connection(list1, list2):
+  for string in list1:
+    if string in list2:
+        return string
 
 
 class Build_world(smach.State):
@@ -148,22 +248,23 @@ class Build_world(smach.State):
         # if the world is created, the WORLD ONTOLOGY is loaded and start the sync with the battery node. The FSM goes to the next state.
         elif self._helper.world_loaded == True:
             print("World created!")
-            # client commands of the armor_api
-            client = ArmorClient("example", "ontoRef") 
-            client.call('LOAD','FILE','',[WORLD_ONTOLOGY_FILE_PATH, WEB_PATH, 'true', 'PELLET', 'false'])
-            # manipulation of the Robot1, moved into corridor C1 from the intial room E
-            client.manipulation.replace_objectprop_b2_ind('isIn', 'Robot1', 'C1', anm.INIT_LOCATION)
-            # Reasoning OWL
-            client.call('REASON','','',[''])
-            # Query from the ontology and find the actual robot position
-            query_position = client.call('QUERY','OBJECTPROP','IND',['isIn','Robot1'])
-            robot_position = self._helper.robot_location(query_position.queried_objects)
-            # Output to visualize in the terminal the actual position of the robot
-            print(f"{bcolors.STATUS}Actually the robot is in: {bcolors.ENDC}", robot_position)
-
             # Since the world is created and loaded correctly, set and publish the sync flag
             wb_sync = 1
             pub_wb_sync.publish(wb_sync)
+
+            # client commands of the armor_api
+            client = ArmorClient("example", "ontoRef") 
+            client.call('LOAD','FILE','',[WORLD_ONTOLOGY_FILE_PATH, WEB_PATH, 'true', 'PELLET', 'false'])
+            
+            setup_Dictionary()
+            go_to_coordinate(anm.INIT_LOCATION)
+
+            # Reasoning OWL
+            client.call('REASON','','',[''])
+
+            # Output to visualize in the terminal the actual position of the robot
+            # print(f"{bcolors.STATUS}Actually the robot is in: {bcolors.ENDC}", robot_position)
+
             
             return TRANS_WORLD_DONE
 

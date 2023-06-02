@@ -45,12 +45,17 @@ import os
 import sys
 import time
 import math
-from std_msgs.msg import Bool
+import random
+from std_msgs.msg import Bool, String
 
 from armor_api.armor_client import ArmorClient
 
 # Import constant name defined to structure the architecture
 from exprob_robot_patrolling import architecture_name_mapper as anm
+
+from exprob_robot_patrolling.srv import RoomInformation
+
+markers_list = []
 
 # Arguments for loading and create the ontology
 rp = rospkg.RosPack()
@@ -58,6 +63,25 @@ assignment_path = rp.get_path('exprob_robot_patrolling')
 ONTOLOGY_FILE_PATH = os.path.join(assignment_path, "topological_map", "topological_map.owl")
 WORLD_ONTOLOGY_FILE_PATH = os.path.join(assignment_path, "topological_map", "world_surveillance.owl") # final map OWL, also used for debugging
 WEB_PATH = 'http://bnc/exp-rob-lab/2022-23'
+
+
+
+def extract_aruco(string):
+    """
+    Call back function that extracts Aruco marker IDs from a string and appends them to the global list of markers if they are not 
+    already present.
+
+    Args:
+        - String 
+    """
+
+    global markers_list
+    for word in string.data.split():
+        if word.isdigit():
+            num = int(word)
+            if 10 < num < 18 and num not in markers_list:
+                markers_list.append(num)
+                print("Marker list: ", markers_list)
 
 
 def timestamp_computation(list):
@@ -80,6 +104,7 @@ def timestamp_computation(list):
      
     return timestamp
 
+
 def build_world():
     """
     This main function initialize the :mod:`world_generator` node, the publisher and allows to use the 
@@ -88,141 +113,101 @@ def build_world():
 
     """
 
+    global markers_list
+
+    print("Building the environment with the marker list: ", markers_list)
+
+    client = ArmorClient("example", "ontoRef")
+    client.call('LOAD','FILE','',[ONTOLOGY_FILE_PATH, WEB_PATH, 'true', 'PELLET', 'false'])
+
+    rospy.wait_for_service('/room_info')
+    roomInfo_srv = rospy.ServiceProxy('/room_info', RoomInformation)
+
+    individuals = []
+
+    for markers in markers_list: 
+        res = roomInfo_srv(markers)
+        roomID =res.room
+        individuals.append(roomID)
+        room_X = res.x
+        room_Y = res.y
+
+        print("Individials before: ", individuals)
+
+        client.manipulation.add_dataprop_to_ind("X_point", roomID , "float", str(room_X))
+        client.manipulation.add_dataprop_to_ind("Y_point", roomID , "float", str(room_Y))
+
+        for c in res.connections:
+            c.through_door
+            individuals.append(c.through_door)
+            client.call('ADD','OBJECTPROP','IND',['hasDoor', roomID, c.through_door])
+            print("Individials after: ", individuals)
+            print("c: ", c)
+
+    
+    #set() method is used to convert any iterable to sequence of distinct elements
+    client.call('DISJOINT','IND','', list(set(individuals)))
+    client.call('REASON','','',[''])
+    
+    # Initializing the rooms visited_at dataproperty
+    for i in list(set(individuals)):
+        if i.startswith('R'):
+            client.manipulation.add_dataprop_to_ind("visitedAt", i, "Long", str(math.floor(time.time())))
+            rospy.sleep(random.uniform(0.0, 1.5))
+    client.call('REASON','','',[''])
+
+    #Strat drom room E
+    client.call('ADD', 'OBJECTPROP', 'IND', ['isIn', 'Robot1', anm.INIT_LOCATION])
+    client.call('REASON','','',[''])
+    
+    #Update time property
+
+    rob_time = client.call('QUERY','DATAPROP','IND',['now', 'Robot1'])
+    old_rob_time = timestamp_computation(rob_time.queried_objects)
+    current_time=str(math.floor(time.time()))
+    client.call('REPLACE','DATAPROP','IND',['now', 'Robot1', 'Long', current_time, old_rob_time])
+   
+    client.call('REASON','','',[''])
+
+    # save the final ontology
+    client.call('SAVE','','',[WORLD_ONTOLOGY_FILE_PATH])    
+
+    
+
+
+def marker_reader():
+    """
+    ROS Node to read the data from the subscribed topic '/marker_publisher/target' and extract the markers' ids. 
+    When all the markers are detected, the node will shutdown the marker_publisher node, publish a boolean flag to the '/loader' topic 
+    and call the function :mod:load_std_map.
+
+    Subscribes to:
+        - '/marker_publisher/target' a string containing the detected markers' ids.
+
+    Publishes to:
+        - '/loader' a boolean flag to communicate when the map is ready to be built.
+
+    """
+
     rospy.init_node(anm.NODE_WORLD_GENERATOR, anonymous=True)
     
     pub = rospy.Publisher(anm.TOPIC_WORLD_LOAD, Bool, queue_size=10)
     pub.publish(False)
-
-    print("Building the environment...")
-
-    client = ArmorClient("example", "ontoRef")
-
-    client.call('LOAD','FILE','',[ONTOLOGY_FILE_PATH, WEB_PATH, 'true', 'PELLET', 'false'])
-    client.call('ADD','OBJECTPROP','IND',['hasDoor', 'E', 'D6'])
-    client.call('ADD','OBJECTPROP','IND',['hasDoor', 'E', 'D7'])
-    print('Doors D6 and D7 associated to room E (RECHARGING ROOM)')
-
-    client.call('ADD','OBJECTPROP','IND',['hasDoor', 'C1', 'D1'])
-    client.call('ADD','OBJECTPROP','IND',['hasDoor', 'C1', 'D2'])
-    client.call('ADD','OBJECTPROP','IND',['hasDoor', 'C1', 'D5'])
-    client.call('ADD','OBJECTPROP','IND',['hasDoor', 'C1', 'D6'])
-    print('Doors D1, D2, D5, D6 associated to corridor C1')
-
-    client.call('ADD','OBJECTPROP','IND',['hasDoor', 'C2', 'D3'])
-    client.call('ADD','OBJECTPROP','IND',['hasDoor', 'C2', 'D4'])
-    client.call('ADD','OBJECTPROP','IND',['hasDoor', 'C2', 'D5'])
-    client.call('ADD','OBJECTPROP','IND',['hasDoor', 'C2', 'D7'])
-    print('Doors D3, D4, D5, D7 associated to corridor C2')
-
-    client.call('ADD','OBJECTPROP','IND',['hasDoor', 'R1', 'D1'])
-    print('Door D1 associated to room R1')
-
-    client.call('ADD','OBJECTPROP','IND',['hasDoor', 'R2', 'D2'])
-    print('Door D2 associated to room R2')
-
-    client.call('ADD','OBJECTPROP','IND',['hasDoor', 'R3', 'D3'])
-    print('Door D3 associated to room R3')
-
-    client.call('ADD','OBJECTPROP','IND',['hasDoor', 'R4', 'D4'])
-    print('Door D4 associated to room R4')
-
-    # declaration of disjunction of all instances of the Abox
-    client.call('DISJOINT','IND','',['R1','R2','R3','R4','E','C1','C2','D1','D2','D3','D4','D5','D6','D7'])
-
-    # definition of the init position of the robot
-    client.call('ADD','OBJECTPROP','IND',['isIn', 'Robot1', anm.INIT_LOCATION])
-    print('Initialization: Robot1 is in: ', anm.INIT_LOCATION)
-    client.call('REASON','','',[''])
-    print('Reasoning...')
-
-    rospy.sleep(2)
-
-    # Start the timestamp in every location to retrieve when a location becomes urgent
-    # Visit and timestamp for R1
-    client.call('REPLACE', 'OBJECTPROP', 'IND', ['isIn', 'Robot1', 'R1', 'E'])
-    client.call('REASON','','',[''])
-    rob_time = client.call('QUERY','DATAPROP','IND',['now', 'Robot1'])
-    old_rob_time = timestamp_computation(rob_time.queried_objects)
-    print('R1 last visit time: ', old_rob_time)
-    current_time=str(math.floor(time.time()))
-    print('R1 current time: ', current_time)
-
-    client.call('REPLACE','DATAPROP','IND',['now', 'Robot1', 'Long', current_time, old_rob_time])
-    client.call('REASON','','',[''])
-    
-    client.call('ADD','DATAPROP','IND',['visitedAt','R1', 'Long', current_time])
-    client.call('REASON','','',[''])
-
-    rospy.sleep(1)
-
-    # Visit and timestamp for R2
-    client.call('REPLACE', 'OBJECTPROP', 'IND', ['isIn', 'Robot1', 'R2', 'R1'])
-    client.call('REASON','','',[''])
-    rob_time = client.call('QUERY','DATAPROP','IND',['now', 'Robot1'])
-    old_rob_time = timestamp_computation(rob_time.queried_objects)
-    print('R2 last visit time: ', old_rob_time)
-    current_time=str(math.floor(time.time()))
-    print('R2 current time: ', current_time)
-    client.call('REPLACE','DATAPROP','IND',['now', 'Robot1', 'Long', current_time, old_rob_time])
-    client.call('REASON','','',[''])
-
-    client.call('ADD','DATAPROP','IND',['visitedAt','R2', 'Long', current_time])
-    client.call('REASON','','',[''])
-
-    rospy.sleep(1)
-
-    # Visit and timestamp for R3
-    client.call('REPLACE', 'OBJECTPROP', 'IND', ['isIn', 'Robot1', 'R3', 'R2']) 
-    client.call('REASON','','',[''])
-    rob_time = client.call('QUERY','DATAPROP','IND',['now', 'Robot1'])
-    old_rob_time = timestamp_computation(rob_time.queried_objects)
-    print('R3 last visit time: ', old_rob_time)
-    current_time=str(math.floor(time.time()))
-    print('R3 current time: ', current_time)    
-    client.call('REPLACE','DATAPROP','IND',['now', 'Robot1', 'Long', current_time, old_rob_time])
-    client.call('REASON','','',[''])
-
-    client.call('ADD','DATAPROP','IND',['visitedAt','R3', 'Long', current_time])
-    client.call('REASON','','',[''])
-
-    rospy.sleep(1)
-
-    # Visit and timestamp for R4
-    client.call('REPLACE', 'OBJECTPROP', 'IND', ['isIn', 'Robot1', 'R4', 'R3'])  
-    client.call('REASON','','',[''])
-    rob_time = client.call('QUERY','DATAPROP','IND',['now', 'Robot1'])
-    old_rob_time = timestamp_computation(rob_time.queried_objects)
-    print('R4 last visit time: ', old_rob_time)
-    current_time=str(math.floor(time.time()))
-    print('R4 current time: ', current_time)
-    client.call('REPLACE','DATAPROP','IND',['now', 'Robot1', 'Long', current_time, old_rob_time])
-    client.call('REASON','','',[''])
-
-    client.call('ADD','DATAPROP','IND',['visitedAt','R4', 'Long', current_time])
-    client.call('REASON','','',[''])
-
-    rospy.sleep(1)
-    
-    client.call('REPLACE', 'OBJECTPROP', 'IND', ['isIn', 'Robot1', anm.INIT_LOCATION, 'R4'])
-    client.call('REASON','','',[''])
-
-    rob_time = client.call('QUERY','DATAPROP','IND',['now', 'Robot1'])
-    old_rob_time = timestamp_computation(rob_time.queried_objects)
-    current_time=str(math.floor(time.time()))
-    client.call('REPLACE','DATAPROP','IND',['now', 'Robot1', 'Long', current_time, old_rob_time])
-    client.call('REASON','','',[''])
-
-    # save the final ontology
-    client.call('SAVE','','',[WORLD_ONTOLOGY_FILE_PATH])
+    sub = rospy.Subscriber("/marker_publisher/target", String, extract_aruco)
 
     while not rospy.is_shutdown():
-        pub.publish(True)
-    
+        if len(markers_list)>=7:
+            print("ALL MARKERS DETECTED")
+            sub.unregister()
+            build_world()
+            pub.publish(True)
+            rospy.sleep(3)
+            rospy.signal_shutdown(anm.NODE_WORLD_GENERATOR)  
 
 if __name__ == '__main__':
 
     try:
-    	build_world()
+    	marker_reader()
     except rospy.ROSInterruptException:
     	pass
    

@@ -190,7 +190,7 @@
     <parent link="servo_bottom"/>
     <child link="U_Link"/>
     <axis xyz="0 0 1"/>
-    <limit effort="1000.0" lower="-1.57" upper="1.57" velocity="0.5"/>
+    <limit effort="1000.0" lower="-3.14" upper="3.14" velocity="0.5"/>
     <origin xyz="0 0 0.056"/>
   </joint>
 

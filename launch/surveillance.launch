@@ -6,7 +6,21 @@
             args="it.emarolab.armor.ARMORMainService"
             launch-prefix="xterm -e"
       > </node>
-    
+
+      <node pkg="exprob_robot_patrolling"
+            type="joint_pose_controller.py"
+            name="joint_pose_controller" 
+            output = "screen"
+      > </node>
+      
+      <!--
+      <node pkg = "exprob_robot_patrolling"  
+            type = "world_generator.py"
+            name = "world_generator"
+            output = "screen"
+      > </node>
+      
+      
       <node pkg = "exprob_robot_patrolling"  
             type = "fsm_behaviour.py" 
             name = "fsm_behaviour"
@@ -14,15 +28,9 @@
       > </node>
     
       <node pkg = "exprob_robot_patrolling"  
-            type = "world_generator.py"
-            name = "world_generator"
-            launch-prefix="xterm -e"
-      > </node>
-    
-      <node pkg = "exprob_robot_patrolling"  
             type = "battery.py"
             name = "battery_node"
             launch-prefix="xterm -e"
-       > </node>
+       > </node>-->
 
 </launch>

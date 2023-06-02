@@ -62,7 +62,7 @@
   <!-- rviz -->
   <param name="use_gui" value="True"/>
   <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" ></node>
-  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
+  <!--<node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />-->
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true" />
 
   <!-- Run a python script to the send a service call to gazebo_ros to spawn a URDF robot -->
@@ -71,14 +71,17 @@
 
   <rosparam file="$(find exprob_robot_patrolling)/config/differential_controller.yaml" command="load" ns="/robot_patrolling_explorer" />
  
-  <node name="controller_spawner" pkg="controller_manager" type="spawner" output="screen" args="--namespace=/robot_patrolling_explorer
-        joint_state_controller
-        joint1_position_controller
-        joint2_position_controller
-        joint3_position_controller
-        joint4_position_controller
-        --shutdown-timeout 3">
+  <node name="controller_spawner" pkg="controller_manager" type="spawner" output="screen" args = "--namespace=/robot_patrolling_explorer
+      joint_state_controller
+      joint1_position_controller
+      joint2_position_controller
+      joint3_position_controller
+      --shutdown-timeout 3">
   </node> 
+
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher">
+    <remap from = "joint_states" to = "robot_patrolling_explorer/joint_states" />
+  </node>
 
 
   <node name="marker_server" pkg="exprob_robot_patrolling" type="marker_server" />
