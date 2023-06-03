@@ -76,7 +76,12 @@ Visualization Manager:
         camera_link:
           Alpha: 1
           Show Axes: false
-          Show Trail: false        
+          Show Trail: false
+        head_base:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true      
         laser:
           Alpha: 1
           Show Axes: false
@@ -118,11 +123,6 @@ Visualization Manager:
           Show Trail: false
           Value: true
         servo_mid:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        servo_up:
           Alpha: 1
           Show Axes: false
           Show Trail: false
@@ -149,6 +149,8 @@ Visualization Manager:
           Value: true
         camera_link:
           Value: true
+        head_base:
+          Value: true
         laser:
           Value: true
         link_front_left_wheel:
@@ -170,8 +172,6 @@ Visualization Manager:
         servo_bottom:
           Value: true
         servo_mid:
-          Value: true
-        servo_up:
           Value: true
         up_mount:
           Value: true
@@ -199,7 +199,7 @@ Visualization Manager:
                   servo_bottom:
                     U_Link:
                       servo_mid:
-                        servo_up:
+                        head_base:
                           up_mount:
                             camera_link:
       Update Interval: 0

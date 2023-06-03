@@ -32,7 +32,7 @@
   <gazebo reference="servo_mid">
     <material>Gazebo/Blue</material>
   </gazebo>
-  <gazebo reference="servo_up">
+  <gazebo reference="head_base">
     <material>Gazebo/Blue</material>
   </gazebo>
   <gazebo reference="up_mount">
@@ -53,9 +53,7 @@
   <gazebo reference="joint_arm_02">
     <provideFeedback>true</provideFeedback>
   </gazebo>
-  <gazebo reference="joint_arm_03">
-    <provideFeedback>true</provideFeedback>
-  </gazebo>
+  
 
 
 <!-- The ft_sensor plugin -->  
@@ -65,7 +63,6 @@
         <topicName>ft_sensor_topic</topicName>
         <jointName>joint_arm_01</jointName>
         <jointName>joint_arm_02</jointName>
-        <jointName>joint_arm_03</jointName>
     </plugin>
 </gazebo>
 

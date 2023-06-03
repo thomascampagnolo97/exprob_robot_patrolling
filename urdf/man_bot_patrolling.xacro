@@ -136,13 +136,13 @@
     </collision>
   </link>
 
-  <link name="servo_up">
+  <link name="head_base">
     <visual>
       <geometry>
         <cylinder length="0.05" radius="0.015"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <material name="blue"/>
+      <material name="light_grey"/>
     </visual>
 
     <inertial>
@@ -151,7 +151,7 @@
       <xacro:cylinder_inertia mass="0.6" r="0.015" l="0.05" />
     </inertial>
     <!-- body -->
-    <collision name="collision_servo_up">
+    <collision name="collision_head_base">
       <geometry>
         <cylinder length="0.05" radius="0.015"/>
       </geometry>
@@ -202,17 +202,15 @@
     <origin xyz="0 0 0.25" rpy="0 0 0"/>
   </joint>
 
-  <joint name="servo_mid_to_servo_up" type="fixed">
+  <joint name="servo_mid_to_head_base" type="fixed">
     <parent link="servo_mid"/>
-    <child link="servo_up"/>
+    <child link="head_base"/>
     <origin xyz="0 0 0.0237" rpy="0 1.57 0"/>
   </joint>
 
-  <joint name="joint_arm_03" type="revolute">
-    <parent link="servo_up"/>
+  <joint name="head_base_camera" type="fixed">
+    <parent link="head_base"/>
     <child link="up_mount"/>
-    <axis xyz="1 0 0"/>
-    <limit effort="1000.0" lower="-1.57" upper="1.57" velocity="0.5"/>
     <origin xyz="-0.028 0 0" rpy="0 -1.57 0"/>
   </joint>
 
@@ -244,16 +242,6 @@
 	</actuator>
 </transmission>
 
-<transmission name="joint_arm_03_trans">
-	<type>transmission_interface/SimpleTransmission</type>
-	<joint name="joint_arm_03">
-		<hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-	</joint>
-	<actuator name="motor3">
-		<hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-		<mechanicalInterface>1</mechanicalInterface>
-	</actuator>
-</transmission>
 
 
 

@@ -82,6 +82,8 @@ def extract_aruco(string):
             if 10 < num < 18 and num not in markers_list:
                 markers_list.append(num)
                 print("Marker list: ", markers_list)
+    
+    return markers_list
 
 
 def timestamp_computation(list):
