@@ -34,8 +34,17 @@ TOPIC_BATTERY_SIGNAL = 'battery_signal'
 TOPIC_SYNC_WORLD_BATTERY = 'world_battery_sync'
 
 # Define the initial and max charge capacity of the battery
-BATTERY_CAPACITY = 40
+BATTERY_CAPACITY = 100
 # ---------------------------------------------------------
+
+
+# Name of the node of the robot motion
+NODE_ROBOT_MOTION = 'robot_motion'
+
+# Name of the service for robot motion
+SERVICE_SET_GOAL_COORDINATES = 'set_goal_coordinates'
+# ---------------------------------------------------------
+
 
 
 # Function used to label each log with a producer tag.

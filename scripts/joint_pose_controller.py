@@ -42,6 +42,19 @@ def callback_joint2(msg):
     value_joint2 = msg.process_value
 
 
+def callback_joint3(msg):
+    """
+    Callback function for the joint position.
+    
+    Args:
+        - JointControllerState 
+    """
+    global value_joint3
+    value_joint3 = msg.process_value
+
+
+    return value_joint3
+
 
 def joint_action():
     # Create ROS node
@@ -53,42 +66,53 @@ def joint_action():
     
     """
     
-
     rospy.init_node('joint_pose_modifier', anonymous = True)
     joint1_pose_pub = rospy.Publisher('/robot_patrolling_explorer/joint1_position_controller/command', Float64, queue_size=10)
     rospy.Subscriber("/robot_patrolling_explorer/joint1_position_controller/state", JointControllerState, callback_joint1)
-    print("Init value of joint 1: ", value_joint1)
-    #joint1_pose_pub.publish(-3.14)
+    # print("Init value of joint 1: ", value_joint1)
+    # #joint1_pose_pub.publish(-3.14)
 
     joint2_pose_pub = rospy.Publisher('/robot_patrolling_explorer/joint2_position_controller/command', Float64, queue_size=10)
     rospy.Subscriber("/robot_patrolling_explorer/joint2_position_controller/state", JointControllerState, callback_joint2)
 
+    joint3_pose_pub = rospy.Publisher('/robot_patrolling_explorer/joint3_position_controller/command', Float64, queue_size=100)
+    rospy.Subscriber("/robot_patrolling_explorer/joint3_position_controller/state", JointControllerState, callback_joint3)
+    
     while value_joint1 > -3.099:
         print("Value of joint 1: ", value_joint1)
         joint1_pose_pub.publish(-3.14)
-        joint2_pose_pub.publish(0.70)
+        joint2_pose_pub.publish(0.60)
+        joint3_pose_pub.publish(-0.25)
         
     while value_joint1 < 2.399:
         print("Value of joint 1: ", value_joint1)
         joint1_pose_pub.publish(2.40)
-        joint2_pose_pub.publish(0.70)
+        joint2_pose_pub.publish(0.60)
+        joint3_pose_pub.publish(-0.25)
     
 
     while value_joint2 > -0.55:
         print("Value of joint 2: ", value_joint2)
         joint2_pose_pub.publish(-0.57)
+        joint3_pose_pub.publish(0.33)
         
     if value_joint2 <= -0.55:
         while value_joint1 > -1.59:
             print("Value of joint 1: ", value_joint1)
             joint1_pose_pub.publish(-1.60)
+            joint3_pose_pub.publish(0.33)
 
-        
-        
+
     
     joint1_pose_pub.publish(0.0)
     joint2_pose_pub.publish(0.0)
-    rospy.sleep(10)
+    joint3_pose_pub.publish(-0.25)
+
+
+    rospy.sleep(5)
+
+    
+    
     #print("Final value of joint 1: ", value_joint1)
 
 

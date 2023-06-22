@@ -31,14 +31,15 @@ from std_msgs.msg import Bool
 # Import constant name defined to structure the architecture
 from exprob_robot_patrolling import architecture_name_mapper as anm
 
+
 # Global parameters that define time informations
-time_recharge = 0.7     # recharge time of a single step
-time_discharge = 1.5    # discharge time of a single step
+time_recharge = 0.1     # recharge time of a single step
+time_discharge = 4.0    # discharge time of a single step
 
 sync_status = 0  # flag for sync with the world
 
 battery_level = anm.BATTERY_CAPACITY # initial and max battery capacity
-threshold = 4   # minimum battery charge threshold
+threshold = 10   # minimum battery charge threshold
 
 
 def sync_callback(data):
@@ -54,6 +55,7 @@ def sync_callback(data):
 
     elif data.data == 1:
         sync_status = 1
+
 
 
 def battery_discharge(level):
@@ -119,7 +121,8 @@ def reset_goal():
 
 def main_battery_behaviour():
     """
-    Function that define the battery behaviour with the initialization of the battery node.
+    Function that define the battery behaviourTOPIC_REPEAT_DETECTION_ARUCO = 'repeat_detection_aruco'
+ with the initialization of the battery node.
     For synchronization with the FSM, this funcionality start its execution when :mod:`world_callback` returns ``1``, advertised by :mod:`fsm_behaviour` node.
     The boolean value of the battery to the state ``battery_status`` is advertised by :mod:`battery_discharge` and :mod:`battery_recharge`,
     and published in the dedicated topic.
@@ -130,7 +133,7 @@ def main_battery_behaviour():
 
     rospy.Subscriber(anm.TOPIC_SYNC_WORLD_BATTERY, Bool, sync_callback)    # subscriber world flag for sync
     pub = rospy.Publisher(anm.TOPIC_BATTERY_SIGNAL, Bool, queue_size=10)    # publisher of the battery status flag
-    
+
     while not rospy.is_shutdown():
 
         if sync_status == 1:
@@ -141,7 +144,7 @@ def main_battery_behaviour():
 
             if battery_status == 0:
                 reset_goal()
-                # the battery level is low
+                rospy.sleep(50.0)
                 battery_status = battery_recharge(battery_level) # recharge cycle
                 pub.publish(battery_status)
 

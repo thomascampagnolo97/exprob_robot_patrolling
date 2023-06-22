@@ -26,7 +26,10 @@
   <gazebo reference="servo_bottom">
     <material>Gazebo/Blue</material>
   </gazebo>
-  <gazebo reference="U_Link">
+  <gazebo reference="U_Link01">
+    <material>Gazebo/White</material>
+  </gazebo>
+  <gazebo reference="U_Link02">
     <material>Gazebo/White</material>
   </gazebo>
   <gazebo reference="servo_mid">
@@ -53,6 +56,9 @@
   <gazebo reference="joint_arm_02">
     <provideFeedback>true</provideFeedback>
   </gazebo>
+  <gazebo reference="U_link_extension">
+    <provideFeedback>true</provideFeedback>
+  </gazebo>
   
 
 
@@ -63,6 +69,7 @@
         <topicName>ft_sensor_topic</topicName>
         <jointName>joint_arm_01</jointName>
         <jointName>joint_arm_02</jointName>
+        <jointName>U_link_extension</jointName>
     </plugin>
 </gazebo>
 
@@ -76,8 +83,8 @@
 	    <leftRearJoint>joint_rear_left_wheel</leftRearJoint>
 	    <rightRearJoint>joint_rear_right_wheel</rightRearJoint>
       <wheelSeparation>0.36</wheelSeparation>
-      <wheelDiameter>0.126</wheelDiameter>
-      <torque>20</torque>
+      <wheelDiameter>0.14</wheelDiameter>
+      <torque>10</torque>
       <topicName>cmd_vel</topicName>
       <commandTopic>cmd_vel</commandTopic>
       <odometryTopic>odom</odometryTopic>
@@ -157,7 +164,7 @@
       </camera>
       <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
         <alwaysOn>true</alwaysOn>
-        <updateRate>100.0</updateRate>
+        <updateRate>0.0</updateRate>
         <cameraName>robot_patrolling_explorer/camera1</cameraName>
         <imageTopicName>image_raw</imageTopicName>
         <cameraInfoTopicName>camera_info</cameraInfoTopicName>

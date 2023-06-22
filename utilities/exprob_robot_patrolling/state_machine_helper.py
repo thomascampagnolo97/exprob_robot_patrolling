@@ -14,6 +14,8 @@ called in the previously mentioned code is defined in the current code.
 
 import rospkg
 import rospy
+import roslib
+import os
 import time
 import math
 import random
@@ -23,6 +25,7 @@ import smach_ros
 from armor_api.armor_client import ArmorClient
 from std_msgs.msg import Bool
 
+from exprob_robot_patrolling.srv import GetCoordinates
 
 
 class Helper:
@@ -48,6 +51,10 @@ class Helper:
         self.urgent_rooms = ''       # List from the query of the individuals in the URGENT class
         self.robot_position = ''     # List that contains always one element, which is the robot position in that moment
         self.timestamp = ''          # List of the queried timestamp
+
+        self.coordinates = {}        # Dictionary for the rooms coordinates
+        self.process_value = 0
+
 
     def world_callback(self, data):
         """ 
@@ -246,7 +253,35 @@ class Helper:
             
         return self.urgent_rooms
 
-    def motion_control(self, robPos, desPos):
+    def go_to_coordinate(self, coor):
+        """
+        The :func:go_to_coordinate function moves the robot to the specified coordinates by calling the get_coordinate service. If the service returns that the target coordinates have been reached, the function returns 1. If the target coordinates have not been reached, the function calls itself again to try moving to the target coordinates again.
+
+        Args:
+            - coor: A string representing the key for the desired coordinates in the global dictionary coordinates.
+        
+        Returns:
+            - response.return: An integer indicating whether the target coordinates have been reached (1) or not (0).
+
+        """
+
+        get_coordinate = rospy.ServiceProxy('/get_coordinate', GetCoordinates)
+        rospy.wait_for_service('/get_coordinate')
+
+        response = get_coordinate(self.coordinates[coor]['X'] , self.coordinates[coor]['Y'])
+        if response.return_ == 1:
+            print('Location reached')
+        else:
+            print('Location not reached')
+            self.go_to_coordinate(coor)
+        return response.return_
+
+    def common_connection(self, list1, list2):
+        for self.string in list1:
+            if self.string in list2:
+                return self.string
+
+    def motion_control(self, desPos):
         """
         Method used when the Robot has to change its position in the environment.
         
@@ -273,176 +308,128 @@ class Helper:
         client = ArmorClient("example", "ontoRef")
         client.call('REASON','','',[''])
         
-        # query the ontology about the room's object property `connectedTo` (spatial information), for the actual robot position and the desided one
-        self.robot_connections = client.call('QUERY','OBJECTPROP','IND',['connectedTo', robPos])
-        self.arrival_connections = client.call('QUERY','OBJECTPROP','IND',['connectedTo', desPos])
+        # query the ontology about the position of the robot in the environment and extract the information with the function robot_location
+        self.query_position=client.call('QUERY','OBJECTPROP','IND',['isIn','Robot1'])
+        self.robot_position= self.robot_location(self.query_position.queried_objects)
         
-        # extract from the queries the robot possible moves (spatial information)
-        self.robot_possible_moves = self.rooms_search(self.robot_connections.queried_objects)
-        self.arrival_moves = self.rooms_search(self.arrival_connections.queried_objects)
+        # For debugging uncomment those lines
+        #print('Robot position: ', self.robot_position) 
+        #print('The robot changes position from: ', self.robot_position, 'to: ', desPos)
 
-        # For debugging uncomment the two lines below
-        #print('Actual robot position, possible moves: ', robot_possible_moves)
-        #print('Desired robot position, possible moves: ', arrival_moves)
+        # query the ontology about the robot's object property `canReach`
+        self.query_reach_loc = client.call('QUERY','OBJECTPROP','IND',['canReach', 'Robot1'])
+        self.robot_can_reach = self.rooms_search(self.query_reach_loc.queried_objects)
 
-        # Find a possible path in the shared location between the possible moves of the actual and desired positions
-        self.shared_location = self.path_planning(self.robot_possible_moves, self.arrival_moves, robPos)
+        # For debugging uncomment this line
+        #print('The locations that the robot can reach are: ', self.robot_can_reach) 
 
-        # For debugging uncomment the line below
-        #print('The shared location is: ', shared_location)
-        
-        # query the subclasses of the locations (ROOM, URGENT, CORRIDOR) from the ontology
-        self.query_locations = client.call('QUERY','CLASS','IND',[desPos, 'true'])
-        self.subclass_location = self.query_locations.queried_objects
 
-        # For debugging uncomment the line below
-        #print('The subclass of the location is: ', subclass_location)
-        
-        if self.subclass_location == ['URGENT'] or self.subclass_location == ['ROOM']:
-            if self.shared_location == '':
-                # if there are not shared location between the actual robot position and the desired one in the map, 
-                # e.g. the robot is in R2 and R3 becomes urgent
-                if 'C1' in self.robot_possible_moves:
-                    # replace the robot in the corridor C1 if C1 is in the robot possible moves list,
-                    # e.g. if the robot is in R2, C1 is a element of the robot possible moves list
-                    client.call('REPLACE', 'OBJECTPROP', 'IND', ['isIn', 'Robot1', robPos, 'C1'])
-                    client.call('REASON','','',[''])
-                elif 'C2' in self.robot_possible_moves:
-                    # replace the robot in the corridor C2 if C2 is in the robot possible moves list,
-                    # e.g. if the robot is in R3, C2 is a element of the robot possible moves list
-                    client.call('REPLACE', 'OBJECTPROP', 'IND', ['isIn', 'Robot1', robPos, 'C2'])
-                    client.call('REASON','','',[''])
-                
-                # query the ontology about the position of the robot in the environment and extract the information with the function robot_location
-                self.query_position = client.call('QUERY','OBJECTPROP','IND',['isIn','Robot1'])
-                self.robot_position = self.robot_location(self.query_position.queried_objects)
+        if desPos in self.robot_can_reach:
+            #print('Robot can reach the desired position!')
+            # Update isIn property of the robot position
+            client.call('REPLACE','OBJECTPROP','IND',['isIn', 'Robot1', desPos, self.robot_position])
+            client.call('REASON','','',[''])
+            
+            # Update the timing information of the robot's data property `now`
+            self.rob_time = client.call('QUERY','DATAPROP','IND',['now', 'Robot1'])
+            self.old_rob_time = self.time_set(self.rob_time.queried_objects)
+            # compute the current time
+            self.current_time=str(math.floor(time.time()))
+            client.call('REPLACE','DATAPROP','IND',['now', 'Robot1', 'Long', self.current_time, self.old_rob_time])
+            client.call('REASON','','',[''])
+            
+            # query the subclasses of the locations (ROOM, URGENT, CORRIDOR) from the ontology
+            self.query_location = client.call('QUERY','CLASS','IND',[desPos, 'true'])
+            self.subclass_location = self.query_location.queried_objects
 
-                #print('Robot position updated: ', robot_position) # For debugging uncomment this line
-                
-                # query the ontology about the room's object property `connectedTo` (spatial information), update the information about the possible moves
-                self.robot_connections = client.call('QUERY','OBJECTPROP','IND',['connectedTo', self.robot_position])
-                self.robot_possible_moves = self.rooms_search(self.robot_connections.queried_objects)
-                # update the path of the shared location between the possible moves of the actual and desired positions
-                self.shared_location = self.path_planning(self.robot_possible_moves, self.arrival_moves, self.robot_position)
-                
-                # print('Shared locations updated: ', shared_location) # For debugging uncomment this line
-
-                # replace the robot position with the shared location
-                client.call('REPLACE', 'OBJECTPROP', 'IND', ['isIn', 'Robot1', self.shared_location, robPos])
-                client.call('REASON','','',[''])
-                # replace the shared position with the desired one
-                client.call('REPLACE', 'OBJECTPROP', 'IND', ['isIn', 'Robot1', desPos, self.shared_location])
-                client.call('REASON','','',[''])
-                
-                # query the ontology about the position of the robot in the environment and extract the information with the function robot_location
-                self.query_position = client.call('QUERY','OBJECTPROP','IND',['isIn','Robot1'])
-                self.robot_position = self.robot_location(self.query_position.queried_objects)
-                
-                #print('New robot position updated: ', robot_position) # For debugging uncomment this line
-                
-                rospy.sleep(self.wait_time)
-
-                # updating all the timing information of the robot's and room's data properties `now` and `visitedAt` respectively
-                # `now` data property
-                self.rob_time = client.call('QUERY','DATAPROP','IND',['now', 'Robot1'])
-                self.old_rob_time = self.time_set(self.rob_time.queried_objects)
+            # For debugging uncomment the line below
+            #print('The subclass of the location is: ', subclass_location)
+            
+            if self.subclass_location == ['URGENT'] or self.subclass_location == ['ROOM']:
+                # Update the timing information of the room's data property `visitedAt`
+                self.room_time = client.call('QUERY','DATAPROP','IND',['visitedAt', desPos])
+                self.old_room_time = self.time_set(self.room_time.queried_objects)
                 # compute the current time
                 self.current_time=str(math.floor(time.time()))
-                client.call('REPLACE','DATAPROP','IND',['now', 'Robot1', 'Long', self.current_time, self.old_rob_time])
-                client.call('REASON','','',[''])
-                # `visitedAt` data property
-                self.room_time = client.call('QUERY','DATAPROP','IND',['visitedAt', desPos])
-                self.old_room_time = self.time_set(self.room_time.queried_objects)
-                client.call('REPLACE','DATAPROP','IND',['visitedAt', desPos, 'Long', self.current_time, self.old_room_time])
-                client.call('REASON','','',[''])
-            
-            elif self.shared_location == robPos:
-                # if a shared location is the actual robot position
-                # replace the shared position with the desired one
-                client.call('REPLACE', 'OBJECTPROP', 'IND', ['isIn', 'Robot1', desPos, self.shared_location])
-                client.call('REASON','','',[''])
-                # update the robot position in the ontology and extract the information
-                self.query_position = client.call('QUERY','OBJECTPROP','IND',['isIn','Robot1'])
-                self.robot_position = self.robot_location(self.query_position.queried_objects)
-
-                rospy.sleep(self.wait_time)
-
-                # updating all the timing information of the robot's and room's data properties `now` and `visitedAt` respectively
-                # `now` data property
-                self.rob_time = client.call('QUERY','DATAPROP','IND',['now', 'Robot1'])
-                self.old_rob_time = self.time_set(self.rob_time.queried_objects)
-                self.current_time=str(math.floor(time.time()))
-                client.call('REPLACE','DATAPROP','IND',['now', 'Robot1', 'Long', self.current_time, self.old_rob_time])
-                client.call('REASON','','',[''])
-                # `visitedAt` data property
-                self.room_time = client.call('QUERY','DATAPROP','IND',['visitedAt', desPos])
-                self.old_room_time = self.time_set(self.room_time.queried_objects)
                 client.call('REPLACE','DATAPROP','IND',['visitedAt', desPos, 'Long', self.current_time, self.old_room_time])
                 client.call('REASON','','',[''])
 
-            else:
-                # if there is a location that is shared between the two list (see `path_planning` function) 
-                # replace the robot position with the shared location
-                client.call('REPLACE', 'OBJECTPROP', 'IND', ['isIn', 'Robot1', self.shared_location, robPos])
-                client.call('REASON','','',[''])
-                # replace the shared position with the desired one
-                client.call('REPLACE', 'OBJECTPROP', 'IND', ['isIn', 'Robot1', desPos, self.shared_location])
-                client.call('REASON','','',[''])
-                # update the robot position in the ontology and extract the information
-                self.query_position = client.call('QUERY','OBJECTPROP','IND',['isIn','Robot1'])
-                self.robot_position = self.robot_location(self.query_position.queried_objects)
-
-                rospy.sleep(self.wait_time)
-
-                # updating all the timing information of the robot's and room's data properties `now` and `visitedAt` respectively
-                # `now` data property
-                self.rob_time = client.call('QUERY','DATAPROP','IND',['now', 'Robot1'])
-                self.old_rob_time = self.time_set(self.rob_time.queried_objects)
-                # compute the current time
-                self.current_time=str(math.floor(time.time()))
-                client.call('REPLACE','DATAPROP','IND',['now', 'Robot1', 'Long', self.current_time, self.old_rob_time])
-                client.call('REASON','','',[''])
-                # `visitedAt` data property
-                self.room_time = client.call('QUERY','DATAPROP','IND',['visitedAt', desPos])
-                self.old_room_time = self.time_set(self.room_time.queried_objects)
-                client.call('REPLACE','DATAPROP','IND',['visitedAt', desPos, 'Long', self.current_time, self.old_room_time])
-                client.call('REASON','','',[''])
-            
-            return self.robot_position
-        
         else:
-            # if the desired position is not a URGENT subclass but is a CORRIDOR or the special room E
-            if self.shared_location == '':
-                # if there are not shared location between the actual robot position and the desired one in the map 
-                # e.g. the robot is in R2 and the desired location is C2
-                if 'C1' in self.robot_possible_moves:
-                    # replace the robot in the corridor C1 if C1 is in the robot possible moves list,
-                    # e.g. if the robot is in R2, C1 is a element of the robot possible moves list
-                    client.call('REPLACE', 'OBJECTPROP', 'IND', ['isIn', 'Robot1', robPos, 'C1'])
-                    client.call('REASON','','',[''])
-                elif 'C2' in self.robot_possible_moves:
-                    # replace the robot in the corridor C2 if C2 is in the robot possible moves list,
-                    # e.g. if the robot is in R3, C2 is a element of the robot possible moves list
-                    client.call('REPLACE', 'OBJECTPROP', 'IND', ['isIn', 'Robot1', robPos, 'C2'])
-                    client.call('REASON','','',[''])
-                
-                # update the robot position in the ontology and extract the information
-                self.query_position = client.call('QUERY','OBJECTPROP','IND',['isIn','Robot1'])
-                self.robot_position = self.robot_location(self.query_position.queried_objects)
-                # replace the desired position with the actual updated
-                client.call('REPLACE', 'OBJECTPROP', 'IND', ['isIn', 'Robot1', desPos, self.robot_position])
-                client.call('REASON','','',[''])
-                # the final query is needed again to return the updated result
-                self.query_position = client.call('QUERY','OBJECTPROP','IND',['isIn','Robot1'])
-                self.robot_position = self.robot_location(self.query_position.queried_objects)
-            else:
-                # if there is a shared location between the actual robot position and the desired one in the map 
-                client.call('REPLACE', 'OBJECTPROP', 'IND', ['isIn', 'Robot1', self.shared_location, robPos])
-                client.call('REPLACE', 'OBJECTPROP', 'IND', ['isIn', 'Robot1', desPos, self.shared_location])
-                client.call('REASON','','',[''])
-                # final query to return the updated robot's position
-                self.query_position = client.call('QUERY','OBJECTPROP','IND',['isIn','Robot1'])
-                self.robot_position = self.robot_location(self.query_position.queried_objects)
+            #print('Robot cannot reach the desired position!')
+            self.query_desLoc_connection = client.call('QUERY','OBJECTPROP','IND',['connectedTo', desPos])
+            # extract from the query the connected locations about the desired one
+            self.des_location_connected = self.rooms_search(self.query_desLoc_connection.queried_objects)
+            
+            # For debugging uncomment the line below
+            #print('The desired location (desired robot position) is connected to: ', self.location_connected)
 
-            return self.robot_position    
+            self.common = self.common_connection(self.des_location_connected, self.robot_can_reach)
+
+            if self.common == None:
+                # The are not common location between the connection of the actual robots location and the location connected to the desired one
+                # The robot cannot reach the desired position
+                client.call('REPLACE','OBJECTPROP','IND',['isIn', 'Robot1', self.robot_can_reach[0], self.robot_position])
+                client.call('REASON','','',[''])
+
+                # query the updated robots position in the environment and extract the information with the function robot_location
+                self.query_position=client.call('QUERY','OBJECTPROP','IND',['isIn','Robot1'])
+                self.robot_position= self.robot_location(self.query_position.queried_objects)
+
+                # query the ontology about the updated robot's object property `canReach`
+                self.query_reach_loc = client.call('QUERY','OBJECTPROP','IND',['canReach', 'Robot1'])
+                self.robot_can_reach = self.rooms_search(self.query_reach_loc.queried_objects)
+
+                self.common = self.common_connection(self.des_location_connected, self.robot_can_reach)
+
+            # updated the robots position in the environment with the common location
+            client.call('REPLACE','OBJECTPROP','IND',['isIn', 'Robot1', self.common, self.robot_position])
+            client.call('REASON','','',[''])
+
+            # query the updated robots position in the environment and extract the information with the function robot_location
+            self.query_position=client.call('QUERY','OBJECTPROP','IND',['isIn','Robot1'])
+            self.robot_position=self.robot_location(self.query_position.queried_objects)
+
+            # updated the robots position in the environment with the desired location
+            client.call('REPLACE','OBJECTPROP','IND',['isIn', 'Robot1', desPos, self.robot_position])
+            client.call('REASON','','',[''])
+
+
+
+            # Update the timing information of the robot's data property `now`
+            self.rob_time = client.call('QUERY','DATAPROP','IND',['now', 'Robot1'])
+            self.old_rob_time = self.time_set(self.rob_time.queried_objects)
+            # compute the current time
+            self.current_time=str(math.floor(time.time()))
+            client.call('REPLACE','DATAPROP','IND',['now', 'Robot1', 'Long', self.current_time, self.old_rob_time])
+            client.call('REASON','','',[''])
+            
+            # query the subclasses of the locations (ROOM, URGENT, CORRIDOR) from the ontology
+            self.query_locations = client.call('QUERY','CLASS','IND',[desPos, 'true'])
+            self.subclass_location = self.query_locations.queried_objects
+
+            # For debugging uncomment the line below
+            #print('The subclass of the location is: ', subclass_location)
+            
+            if self.subclass_location == ['URGENT'] or self.subclass_location == ['ROOM']:
+                # Update the timing information of the room's data property `visitedAt`
+                self.room_time = client.call('QUERY','DATAPROP','IND',['visitedAt', desPos])
+                self.old_room_time = self.time_set(self.room_time.queried_objects)
+                # compute the current time
+                self.current_time=str(math.floor(time.time()))
+                client.call('REPLACE','DATAPROP','IND',['visitedAt', desPos, 'Long', self.current_time, self.old_room_time])
+                client.call('REASON','','',[''])
+
+
+        # query the updated robots position in the environment and extract the information with the function robot_location
+        self.query_position=client.call('QUERY','OBJECTPROP','IND',['isIn','Robot1'])
+        self.robot_position=self.robot_location(self.query_position.queried_objects)
+        self.go_to_coordinate(self.robot_position)
+
+        # For debugging uncomment the line below
+        #print('The robot is in: ', self.robot_position)
+
+        client.call('REASON','','',[''])
+
+        #return self.robot_position
+
         

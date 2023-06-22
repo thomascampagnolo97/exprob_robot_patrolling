@@ -56,6 +56,7 @@ from exprob_robot_patrolling import architecture_name_mapper as anm
 from exprob_robot_patrolling.srv import RoomInformation
 
 markers_list = []
+done = False
 
 # Arguments for loading and create the ontology
 rp = rospkg.RosPack()
@@ -159,7 +160,7 @@ def build_world():
     client.call('REASON','','',[''])
 
     #Strat drom room E
-    client.call('ADD', 'OBJECTPROP', 'IND', ['isIn', 'Robot1', anm.INIT_LOCATION])
+    client.call('ADD', 'OBJECTPROP', 'IND', ['isIn', 'Robot1', 'E'])
     client.call('REASON','','',[''])
     
     #Update time property
@@ -172,7 +173,7 @@ def build_world():
     client.call('REASON','','',[''])
 
     # save the final ontology
-    client.call('SAVE','','',[WORLD_ONTOLOGY_FILE_PATH])    
+    client.call('SAVE','','',[WORLD_ONTOLOGY_FILE_PATH])
 
     
 
@@ -195,16 +196,24 @@ def marker_reader():
     
     pub = rospy.Publisher(anm.TOPIC_WORLD_LOAD, Bool, queue_size=10)
     pub.publish(False)
+
     sub = rospy.Subscriber("/marker_publisher/target", String, extract_aruco)
 
+    generation = 0
+
+    
     while not rospy.is_shutdown():
-        if len(markers_list)>=7:
-            print("ALL MARKERS DETECTED")
-            sub.unregister()
-            build_world()
+        if generation == 0:
+            if len(markers_list)>=7:
+                print("ALL MARKERS DETECTED")
+                sub.unregister()
+                build_world()
+                generation = 1
+
+        else:
             pub.publish(True)
-            rospy.sleep(3)
-            rospy.signal_shutdown(anm.NODE_WORLD_GENERATOR)  
+            #rospy.sleep(10)
+            #rospy.signal_shutdown(anm.NODE_WORLD_GENERATOR)  
 
 if __name__ == '__main__':
 

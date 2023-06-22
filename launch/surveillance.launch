@@ -13,24 +13,28 @@
             launch-prefix="xterm -e"
       > </node>
       
-      
       <node pkg = "exprob_robot_patrolling"  
             type = "world_generator.py"
             name = "world_generator"
-            output = "screen"
+            launch-prefix="xterm -e"
       > </node>
       
-      <!--
       <node pkg = "exprob_robot_patrolling"  
             type = "fsm_behaviour.py" 
             name = "fsm_behaviour"
             output = "screen"
       > </node>
-    
+      
       <node pkg = "exprob_robot_patrolling"  
             type = "battery.py"
             name = "battery_node"
             launch-prefix="xterm -e"
-       > </node>-->
+       > </node>
+
+      <node pkg = "exprob_robot_patrolling"  
+            type = "robot_motion.py"
+            name = "robot_motion"
+            launch-prefix="xterm -e"
+       > </node>
 
 </launch>

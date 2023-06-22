@@ -222,7 +222,7 @@
 
     <owl:NamedIndividual rdf:about="http://bnc/exp-rob-lab/2022-23#Robot1">
         <now rdf:datatype="http://www.w3.org/2001/XMLSchema#long">1665579740</now>
-        <urgencyThreshold rdf:datatype="http://www.w3.org/2001/XMLSchema#long">20</urgencyThreshold>
+        <urgencyThreshold rdf:datatype="http://www.w3.org/2001/XMLSchema#long">7</urgencyThreshold>
     </owl:NamedIndividual>
     
 

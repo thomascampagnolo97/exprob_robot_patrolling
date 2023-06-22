@@ -51,7 +51,7 @@ from exprob_robot_patrolling import architecture_name_mapper as anm
 # Import the class that support the interface of the Finite State Machine, which is available in this file
 from exprob_robot_patrolling.state_machine_helper import Helper
 
-from exprob_robot_patrolling.srv import Get_coordinates
+from exprob_robot_patrolling.srv import GetCoordinates
 
 
 
@@ -75,7 +75,7 @@ battery_status = 1      # Battery flag, 1 means that it is fully charged
 urgency_status = 0      # Flag to identify the urgent rooms
 world_loaded = False    # World flag, False when the map is not loaded, True when map is loaded correctly (pub in world_generator_node)
 wb_sync = 0             # World-battery synchronization flag for the battery_node
-time_threshold = 20     # Time threshold to signal the urgency of the rooms
+time_threshold = 7     # Time threshold to signal the urgency of the rooms
 
 shared_location = ''    # List of the shared locations given by the connectedTo data property of the OWL
 urgent_rooms = ''       # List from the query of the individuals in the URGENT class
@@ -111,14 +111,19 @@ def go_to_coordinate(coor):
         - response.return: An integer indicating whether the target coordinates have been reached (1) or not (0).
 
     """
-    get_coordinate = rospy.ServiceProxy('get_coordinate', Get_coordinates)
+
+    rospy.wait_for_service('/get_coordinate')
+    get_coordinate = rospy.ServiceProxy('/get_coordinate', GetCoordinates)
+
     response = get_coordinate(coordinates[coor]['X'] , coordinates[coor]['Y'])
+    print(response)
     if response.return_ == 1:
         print('Location reached')
     else:
         print('Location not reached')
         go_to_coordinate(coor)
     return response.return_
+
 
 def setup_Dictionary():
     """
@@ -141,26 +146,6 @@ def setup_Dictionary():
         Y=float(extract_value(req.queried_objects))
         coordinates[i] = {'X': X, 'Y': Y}
 
-def room_scan():
-    """"
-    This function controls the commands passed to the joints. Joint 1 will rotate 360 degrees to scan the room."
-    
-    """
-    # Create a publisher for the cmd_vel topic
-    print("Scanning..")
-    joint1_pose_pub = rospy.Publisher('/myRob/joint1_position_controller/command', Float64, queue_size=10)
-    rospy.Subscriber("/myRob/joint1_position_controller/state", JointControllerState, callback_scan)
-    joint1_pose_pub.publish(-3.0)
-    while process_value > -2.9:
-        joint1_pose_pub.publish(-3.0)
-    while process_value < 2.9:
-        joint1_pose_pub.publish(3.0)
-    joint1_pose_pub.publish(0.0)
-
-def callback_scan(msg):
-    global process_value
-    process_value = msg.process_value
-
 
 def extract_value(input_list):
     """
@@ -182,10 +167,178 @@ def extract_value(input_list):
     # Convert the string to a float and return it
     return float(stripped_string)
 
-def common_connection(list1, list2):
-  for string in list1:
-    if string in list2:
-        return string
+
+def callback_scan(msg):
+    global process_value
+    process_value = msg.process_value
+
+def room_scan():
+    """"
+    This function controls the commands passed to the joints. Joint 1 will rotate 360 degrees to scan the room."
+    
+    """
+    # Create a publisher for the cmd_vel topic
+    print("Scanning..")
+    joint1_pose_pub = rospy.Publisher('/robot_patrolling_explorer/joint1_position_controller/command', Float64, queue_size=10)
+    rospy.Subscriber("/robot_patrolling_explorer/joint1_position_controller/state", JointControllerState, callback_scan)
+    joint1_pose_pub.publish(-3.0)
+    while process_value > -2.9:
+        joint1_pose_pub.publish(-3.0)
+    while process_value < 2.9:
+        joint1_pose_pub.publish(3.0)
+    joint1_pose_pub.publish(0.0)
+
+
+def motion_control(self, helper, desPos):
+        """
+        Method used when the Robot has to change its position in the environment.
+        
+        This is the main function that define the motion of the robot in the map and takes the help of three other functions 
+            - ``rooms_search``; 
+            - ``path_planning``; 
+            - ``time_set``.
+
+        Args
+            self: instance of the current class
+            robPos: is the actual robot position when this function is called
+            desPos: is the desired robot position
+        
+        Returns
+            robot_position: the updated robot position at the end of the movement, when the location is changed
+
+        """
+
+        #global shared_location
+        #global urgent_rooms
+        #global robot_position
+
+        self._helper = helper
+        
+        # client commands of the armor_api
+        client = ArmorClient("example", "ontoRef")
+        client.call('REASON','','',[''])
+        
+        # query the ontology about the position of the robot in the environment and extract the information with the function robot_location
+        query_position=client.call('QUERY','OBJECTPROP','IND',['isIn','Robot1'])
+        robot_position= self._helper.robot_location(query_position.queried_objects)
+        
+        # For debugging uncomment those lines
+        #print('Robot position: ', self.robot_position) 
+        #print('The robot changes position from: ', self.robot_position, 'to: ', desPos)
+
+        # query the ontology about the robot's object property `canReach`
+        query_reach_loc = client.call('QUERY','OBJECTPROP','IND',['canReach', 'Robot1'])
+        robot_can_reach = self._helper.rooms_search(query_reach_loc.queried_objects)
+
+        # For debugging uncomment this line
+        #print('The locations that the robot can reach are: ', self.robot_can_reach) 
+
+
+        if desPos in robot_can_reach:
+            #print('Robot can reach the desired position!')
+            # Update isIn property of the robot position
+            client.call('REPLACE','OBJECTPROP','IND',['isIn', 'Robot1', desPos, robot_position])
+            client.call('REASON','','',[''])
+            
+            # Update the timing information of the robot's data property `now`
+            rob_time = client.call('QUERY','DATAPROP','IND',['now', 'Robot1'])
+            old_rob_time = self._helper.time_set(rob_time.queried_objects)
+            # compute the current time
+            current_time=str(math.floor(time.time()))
+            client.call('REPLACE','DATAPROP','IND',['now', 'Robot1', 'Long', current_time, old_rob_time])
+            client.call('REASON','','',[''])
+            
+            # query the subclasses of the locations (ROOM, URGENT, CORRIDOR) from the ontology
+            query_location = client.call('QUERY','CLASS','IND',[desPos, 'true'])
+            subclass_location = query_location.queried_objects
+
+            # For debugging uncomment the line below
+            #print('The subclass of the location is: ', subclass_location)
+            
+            if subclass_location == ['URGENT'] or subclass_location == ['ROOM']:
+                # Update the timing information of the room's data property `visitedAt`
+                room_time = client.call('QUERY','DATAPROP','IND',['visitedAt', desPos])
+                old_room_time = self._helper.time_set(room_time.queried_objects)
+                # compute the current time
+                current_time=str(math.floor(time.time()))
+                client.call('REPLACE','DATAPROP','IND',['visitedAt', desPos, 'Long', current_time, old_room_time])
+                client.call('REASON','','',[''])
+
+        else:
+            #print('Robot cannot reach the desired position!')
+            query_desLoc_connection = client.call('QUERY','OBJECTPROP','IND',['connectedTo', desPos])
+            # extract from the query the connected locations about the desired one
+            des_location_connected = self._helper.rooms_search(query_desLoc_connection.queried_objects)
+            
+            # For debugging uncomment the line below
+            #print('The desired location (desired robot position) is connected to: ', self.location_connected)
+
+            common = self._helper.common_connection(des_location_connected, robot_can_reach)
+
+            if common == None:
+                # The are not common location between the connection of the actual robots location and the location connected to the desired one
+                # The robot cannot reach the desired position
+                client.call('REPLACE','OBJECTPROP','IND',['isIn', 'Robot1', robot_can_reach[0], robot_position])
+                client.call('REASON','','',[''])
+
+                # query the updated robots position in the environment and extract the information with the function robot_location
+                query_position=client.call('QUERY','OBJECTPROP','IND',['isIn','Robot1'])
+                robot_position= self._helper.robot_location(query_position.queried_objects)
+
+                # query the ontology about the updated robot's object property `canReach`
+                query_reach_loc = client.call('QUERY','OBJECTPROP','IND',['canReach', 'Robot1'])
+                robot_can_reach = self._helper.rooms_search(query_reach_loc.queried_objects)
+
+                common = self._helper.common_connection(des_location_connected, robot_can_reach)
+
+            # updated the robots position in the environment with the common location
+            client.call('REPLACE','OBJECTPROP','IND',['isIn', 'Robot1', common, robot_position])
+            client.call('REASON','','',[''])
+
+            # query the updated robots position in the environment and extract the information with the function robot_location
+            query_position=client.call('QUERY','OBJECTPROP','IND',['isIn','Robot1'])
+            robot_position=self._helper.robot_location(query_position.queried_objects)
+
+            # updated the robots position in the environment with the desired location
+            client.call('REPLACE','OBJECTPROP','IND',['isIn', 'Robot1', desPos, robot_position])
+            client.call('REASON','','',[''])
+
+
+
+            # Update the timing information of the robot's data property `now`
+            rob_time = client.call('QUERY','DATAPROP','IND',['now', 'Robot1'])
+            old_rob_time = self._helper.time_set(rob_time.queried_objects)
+            # compute the current time
+            current_time=str(math.floor(time.time()))
+            client.call('REPLACE','DATAPROP','IND',['now', 'Robot1', 'Long', current_time, old_rob_time])
+            client.call('REASON','','',[''])
+            
+            # query the subclasses of the locations (ROOM, URGENT, CORRIDOR) from the ontology
+            query_locations = client.call('QUERY','CLASS','IND',[desPos, 'true'])
+            subclass_location = query_locations.queried_objects
+
+            # For debugging uncomment the line below
+            #print('The subclass of the location is: ', subclass_location)
+            
+            if subclass_location == ['URGENT'] or subclass_location == ['ROOM']:
+                # Update the timing information of the room's data property `visitedAt`
+                room_time = client.call('QUERY','DATAPROP','IND',['visitedAt', desPos])
+                old_room_time = self._helper.time_set(room_time.queried_objects)
+                # compute the current time
+                current_time=str(math.floor(time.time()))
+                client.call('REPLACE','DATAPROP','IND',['visitedAt', desPos, 'Long', current_time, old_room_time])
+                client.call('REASON','','',[''])
+
+
+        # query the updated robots position in the environment and extract the information with the function robot_location
+        query_position=client.call('QUERY','OBJECTPROP','IND',['isIn','Robot1'])
+        robot_position=self._helper.robot_location(query_position.queried_objects)
+        go_to_coordinate(robot_position)
+
+        # For debugging uncomment the line below
+        #print('The robot is in: ', self.robot_position)
+
+        client.call('REASON','','',[''])
 
 
 class Build_world(smach.State):
@@ -227,14 +380,19 @@ class Build_world(smach.State):
         global robot_position
         global pub_wb_sync
 
+
         # Subscriber of the world flag given by the world_generator_node
         rospy.Subscriber(anm.TOPIC_WORLD_LOAD, Bool, self._helper.world_callback)
         # Subscribers to the topic `battery_signal`
         rospy.Subscriber(anm.TOPIC_BATTERY_SIGNAL, Bool, self._helper.battery_callback) # battery flag (battery_status)
+
         # Publisher for the sync between world and battery
         pub_wb_sync = rospy.Publisher(anm.TOPIC_SYNC_WORLD_BATTERY, Bool, queue_size=10)
+        
 
-        rospy.sleep(wait_time)
+        #rospy.sleep(wait_time)
+
+        client = ArmorClient("example", "ontoRef")
 
         print("\n\n-------- Executing state BUILD WORLD --------\n")
 
@@ -242,22 +400,22 @@ class Build_world(smach.State):
         # If the world is not created yet, the battery node doesn't start its execution and the FSM remains in this state
         if self._helper.world_loaded == False:
             print("Creating world ... \n")
-            wb_sync = 0
-            pub_wb_sync.publish(wb_sync)
+            
             return TRANS_WAITING_MAP
         # if the world is created, the WORLD ONTOLOGY is loaded and start the sync with the battery node. The FSM goes to the next state.
         elif self._helper.world_loaded == True:
             print("World created!")
-            # Since the world is created and loaded correctly, set and publish the sync flag
+            
+
+            # client commands of the armor_api
+            client.call('LOAD','FILE','',[WORLD_ONTOLOGY_FILE_PATH, WEB_PATH, 'true', 'PELLET', 'false'])
+            print('Map loaded FSM starts the plan!!!!')
+
             wb_sync = 1
             pub_wb_sync.publish(wb_sync)
 
-            # client commands of the armor_api
-            client = ArmorClient("example", "ontoRef") 
-            client.call('LOAD','FILE','',[WORLD_ONTOLOGY_FILE_PATH, WEB_PATH, 'true', 'PELLET', 'false'])
-            
             setup_Dictionary()
-            go_to_coordinate(anm.INIT_LOCATION)
+            go_to_coordinate('E')
 
             # Reasoning OWL
             client.call('REASON','','',[''])
@@ -318,7 +476,11 @@ class No_emergency(smach.State):
         # Subscribers to the topic `battery_signal`
         rospy.Subscriber(anm.TOPIC_BATTERY_SIGNAL, Bool, self._helper.battery_callback) # battery flag (battery_status)
 
-        rospy.sleep(wait_time)
+        # Publisher for the sync between world and battery
+        pub_wb_sync = rospy.Publisher(anm.TOPIC_SYNC_WORLD_BATTERY, Bool, queue_size=10)
+        
+
+        #rospy.sleep(wait_time)
 
         print("\n\n-------- Executing state NO EMERGENCY --------\n")
 
@@ -326,48 +488,56 @@ class No_emergency(smach.State):
         client = ArmorClient("example", "ontoRef")
         # Reasoning OWL
         client.call('REASON','','',[''])
+
+        wb_sync = 1
+        pub_wb_sync.publish(wb_sync)
+
         # Query from the ontology and find the actual robot position
         query_position = client.call('QUERY','OBJECTPROP','IND',['isIn','Robot1'])
         robot_position = self._helper.robot_location(query_position.queried_objects)
         # Output to visualize in the terminal the actual position of the robot
         print(f"{bcolors.STATUS}Actually the robot is in: {bcolors.ENDC}", robot_position)
 
+        # list of the urgent rooms
+        urgent_rooms = self._helper.urgency()
+        # Output to visualize in the terminal the urgent rooms
+        print(f"{bcolors.URGENT}The urgent rooms are: {bcolors.ENDC}", urgent_rooms)
 
-        # Procedure for checking if there are some urgent rooms as long as the robot is in the corridors
-        locations_list = ['R1', 'R2', 'R3', 'R4']
+        # # Procedure for checking if there are some urgent rooms as long as the robot is in the corridors
+        # locations_list = ['R1', 'R2', 'R3', 'R4']
                 
-        for room in locations_list:
-            # compute the current time
-            current_time=str(math.floor(time.time()))
-            # query the ontology about the room's object property `visitedAt` (time information), extract in old_room_rime
-            room_time = client.call('QUERY','DATAPROP','IND',['visitedAt', room])
-            old_room_time = self._helper.time_set(room_time.queried_objects)
+        # for room in locations_list:
+        #     # compute the current time
+        #     current_time=str(math.floor(time.time()))
+        #     # query the ontology about the room's object property `visitedAt` (time information), extract in old_room_rime
+        #     room_time = client.call('QUERY','DATAPROP','IND',['visitedAt', room])
+        #     old_room_time = self._helper.time_set(room_time.queried_objects)
             
-            # cast the time values (string) to integer values and check if the threshold has been exceeded
-            # if yes, the transition to the urgent rooms is returned
-            if (int(current_time)-int(old_room_time)) > time_threshold:
-                print(f"\n{bcolors.URGENT}Warning: There are some urgent rooms!{bcolors.ENDC}")
-                # query the ontology about the robot's object property `now` (time information), extract in old_rob_time
-                rob_time = client.call('QUERY','DATAPROP','IND',['now', 'Robot1'])
-                old_rob_time = self._helper.time_set(rob_time.queried_objects)
-                # compute the current time
-                current_time=str(math.floor(time.time()))
-                # replace the old_rob_time with the new value (current_time) of the robot's object property `now`
-                client.call('REPLACE','DATAPROP','IND',['now', 'Robot1', 'Long', current_time, old_rob_time])
-                # Reasoning OWL
-                client.call('REASON','','',[''])
-                # query the ontology about the room's object property `visitedAt` (time information), extract in old_room_rime
-                room_time = client.call('QUERY','DATAPROP','IND',['visitedAt', room])
-                old_room_time = self._helper.time_set(room_time.queried_objects)
-                # Reasoning OWL
-                client.call('REASON','','',[''])
+        #     # cast the time values (string) to integer values and check if the threshold has been exceeded
+        #     # if yes, the transition to the urgent rooms is returned
+        #     if (int(current_time)-int(old_room_time)) > time_threshold:
+        #         print(f"\n{bcolors.URGENT}Warning: There are some urgent rooms!{bcolors.ENDC}")
+        #         # query the ontology about the robot's object property `now` (time information), extract in old_rob_time
+        #         rob_time = client.call('QUERY','DATAPROP','IND',['now', 'Robot1'])
+        #         old_rob_time = self._helper.time_set(rob_time.queried_objects)
+        #         # compute the current time
+        #         current_time=str(math.floor(time.time()))
+        #         # replace the old_rob_time with the new value (current_time) of the robot's object property `now`
+        #         client.call('REPLACE','DATAPROP','IND',['now', 'Robot1', 'Long', current_time, old_rob_time])
+        #         # Reasoning OWL
+        #         client.call('REASON','','',[''])
+        #         # query the ontology about the room's object property `visitedAt` (time information), extract in old_room_rime
+        #         room_time = client.call('QUERY','DATAPROP','IND',['visitedAt', room])
+        #         old_room_time = self._helper.time_set(room_time.queried_objects)
+        #         # Reasoning OWL
+        #         client.call('REASON','','',[''])
 
-                # list of the urgent rooms
-                urgent_rooms = self._helper.urgency()
-                # Output to visualize in the terminal the urgent rooms
-                print(f"{bcolors.URGENT}The urgent rooms are: {bcolors.ENDC}", urgent_rooms)
+        #         # list of the urgent rooms
+        #         urgent_rooms = self._helper.urgency()
+        #         # Output to visualize in the terminal the urgent rooms
+        #         print(f"{bcolors.URGENT}The urgent rooms are: {bcolors.ENDC}", urgent_rooms)
 
-                return TRANS_URGENT_ROOM
+        #         return TRANS_URGENT_ROOM
 
         # Main Behaviuor of the state
         if self._helper.battery_status == 1: # battery conditions check, that task has the higher priority
@@ -375,10 +545,10 @@ class No_emergency(smach.State):
                 if robot_position == 'C1':
                     print(f"{bcolors.MOVING}The Robot is in C1, should go in C2{bcolors.ENDC}\n")
 
-                    rospy.sleep(3)
+                    #rospy.sleep(wait_time)
 
                     # call function to change the position of the robot (from actual position to the desired one)
-                    self._helper.motion_control(robot_position, 'C2')
+                    motion_control(self, self._helper, 'C2')
                     client.call('REASON','','',[''])
                     
                     return TRANS_NO_URGENT_ROOM
@@ -386,15 +556,15 @@ class No_emergency(smach.State):
                 elif robot_position == "C2":
                     print(f"{bcolors.MOVING}The Robot is in C2, should go in C1{bcolors.ENDC}\n")
 
-                    rospy.sleep(3)
+                    #rospy.sleep(wait_time)
                     
                     # call function to change the position of the robot (from actual position to the desired one)
-                    self._helper.motion_control(robot_position, 'C1')
+                    motion_control(self, self._helper, 'C1')
                     client.call('REASON','','',[''])
                     
                     return TRANS_NO_URGENT_ROOM
                 else:
-                    self._helper.motion_control(robot_position, 'C1')
+                    motion_control(self, self._helper, 'C1')
                     return TRANS_NO_URGENT_ROOM                
             else:
                 # there are some urgent rooms, go to the SURVEILLANCE state
@@ -442,6 +612,7 @@ class Recharging(smach.State):
 
         # Subscribers to the topic `battery_signal`
         rospy.Subscriber(anm.TOPIC_BATTERY_SIGNAL, Bool, self._helper.battery_callback) # battery flag (battery_status)
+
         
         # client commands of the armor_api
         client = ArmorClient("example", "ontoRef")
@@ -453,14 +624,14 @@ class Recharging(smach.State):
         query_position = client.call('QUERY','OBJECTPROP','IND',['isIn','Robot1'])
         robot_position = self._helper.robot_location(query_position.queried_objects)
 
-        rospy.sleep(wait_time)
-        
+        #rospy.sleep(wait_time)
+
         # Main Behaviuor of the state
         if self._helper.battery_status == 0:
             print(f"{bcolors.BATTERY}Battery recharging ... {bcolors.ENDC}\n")
             # call function to change the position of the robot (from actual position to the recharging room, E)
-            self._helper.motion_control(robot_position, anm.CHARGE_LOCATION)
-            client.call('REASON','','',[''])
+            motion_control(self, self._helper, 'E')
+            #client.call('REASON','','',[''])
             
             return TRANS_BATTERY_LOW
         else:
@@ -522,7 +693,7 @@ class Surveillance(smach.State):
         # Output to visualize in the terminal the urgent rooms
         print(f"{bcolors.URGENT}The urgent rooms are: {bcolors.ENDC}", urgent_rooms)
 
-        rospy.sleep(wait_time)
+        #rospy.sleep(wait_time)
         
         # Main Behaviuor of the state
         if self._helper.battery_status == 0:  
@@ -538,36 +709,42 @@ class Surveillance(smach.State):
             # there are some urgent rooms
             for i in urgent_rooms :
                 # check which are the urgent rooms in the list that must be surveillanced by the robot
+                query_position = client.call('QUERY','OBJECTPROP','IND',['isIn','Robot1'])
+                robot_position = self._helper.robot_location(query_position.queried_objects)
+                print(f"{bcolors.STATUS}The room surveillanced by the robot is: {bcolors.ENDC}", robot_position)
+
                 if "R1" in i:
-                    query_position = client.call('QUERY','OBJECTPROP','IND',['isIn','Robot1'])
-                    robot_position = self._helper.robot_location(query_position.queried_objects)
-                    client.call('REASON','','',[''])
-                    new_pose = self._helper.motion_control(robot_position,'R1')
-                    print(f"{bcolors.STATUS}The room surveillanced by the robot is: {bcolors.ENDC}", new_pose)
+                    
+                    #client.call('REASON','','',[''])
+                    motion_control(self, self._helper, 'R1')
+                    room_scan()
                     break
                 
                 elif "R2" in i:
-                    query_position = client.call('QUERY','OBJECTPROP','IND',['isIn','Robot1'])
-                    robot_position = self._helper.robot_location(query_position.queried_objects)
-                    client.call('REASON','','',[''])
-                    new_pose = self._helper.motion_control(robot_position,'R2')
-                    print(f"{bcolors.STATUS}The room surveillanced by the robot is: {bcolors.ENDC}", new_pose)
+                    #query_position = client.call('QUERY','OBJECTPROP','IND',['isIn','Robot1'])
+                    #robot_position = self._helper.robot_location(query_position.queried_objects)
+                    #client.call('REASON','','',[''])
+                    motion_control(self, self._helper, 'R2')
+                    room_scan()
+                    #print(f"{bcolors.STATUS}The room surveillanced by the robot is: {bcolors.ENDC}", robot_position)
                     break
                 
                 elif "R3" in i:
-                    query_position = client.call('QUERY','OBJECTPROP','IND',['isIn','Robot1'])
-                    robot_position = self._helper.robot_location(query_position.queried_objects)
-                    client.call('REASON','','',[''])
-                    new_pose = self._helper.motion_control(robot_position,'R3')
-                    print(f"{bcolors.STATUS}The room surveillanced by the robot is: {bcolors.ENDC}", new_pose)
+                    # query_position = client.call('QUERY','OBJECTPROP','IND',['isIn','Robot1'])
+                    # robot_position = self._helper.robot_location(query_position.queried_objects)
+                    #client.call('REASON','','',[''])
+                    motion_control(self, self._helper, 'R3')
+                    room_scan()
+                    #print(f"{bcolors.STATUS}The room surveillanced by the robot is: {bcolors.ENDC}", new_pose)
                     break
                 
                 elif "R4" in i:
-                    query_position = client.call('QUERY','OBJECTPROP','IND',['isIn','Robot1'])
-                    robot_position = self._helper.robot_location(query_position.queried_objects)
-                    client.call('REASON','','',[''])
-                    new_pose = self._helper.motion_control(robot_position,'R4')
-                    print(f"{bcolors.STATUS}The room surveillanced by the robot is: {bcolors.ENDC}", new_pose)
+                    # query_position = client.call('QUERY','OBJECTPROP','IND',['isIn','Robot1'])
+                    # robot_position = self._helper.robot_location(query_position.queried_objects)
+                    #client.call('REASON','','',[''])
+                    motion_control(self, self._helper, 'R4')
+                    room_scan()
+                    #print(f"{bcolors.STATUS}The room surveillanced by the robot is: {bcolors.ENDC}", new_pose)
                     break
         
         return TRANS_URGENT_ROOM
@@ -582,7 +759,7 @@ def main():
     """
     # Before to initialize the ROS node waits some time to allow the `world_generator` node to 
     # create the environment of the world from the ontology (OWL)
-    rospy.sleep(wait_time)
+    #rospy.sleep(wait_time)
     # ROS Node initialization
     #rospy.init_node('fsm_behaviour')
     rospy.init_node(anm.NODE_STATE_MACHINE, log_level=rospy.INFO)

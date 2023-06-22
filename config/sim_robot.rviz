@@ -64,7 +64,12 @@ Visualization Manager:
         Expand Link Details: false
         Expand Tree: false
         Link Tree Style: Links in Alphabetic Order
-        U_Link:
+        U_Link01:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        U_Link02:
           Alpha: 1
           Show Axes: false
           Show Trail: false
@@ -143,7 +148,9 @@ Visualization Manager:
       Frame Timeout: 2
       Frames:
         All Enabled: true
-        U_Link:
+        U_Link01:
+          Value: true
+        U_Link02:
           Value: true
         base_footprint:
           Value: true
@@ -197,7 +204,8 @@ Visualization Manager:
                   {}
                 rbot_base:
                   servo_bottom:
-                    U_Link:
+                    U_Link01:
+                    U_Link02:
                       servo_mid:
                         head_base:
                           up_mount:

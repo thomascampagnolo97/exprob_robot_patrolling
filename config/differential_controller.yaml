@@ -10,4 +10,9 @@
   joint2_position_controller:
     type: "effort_controllers/JointPositionController"
     joint: joint_arm_02
+    pid: {p: 100.0, i: 10.0, d: 15.0}
+  
+  joint3_position_controller:
+    type: "effort_controllers/JointPositionController"
+    joint: U_link_extension
     pid: {p: 100.0, i: 10.0, d: 15.0} 

@@ -92,10 +92,10 @@
     </collision>
   </link>
 
-  <link name="U_Link">
+  <link name="U_Link01">
     <visual>
       <geometry>
-        <box size="0.015 0.03 0.50"/>
+        <box size="0.015 0.03 0.25"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <material name="white"/>
@@ -107,12 +107,42 @@
       <inertia ixx="0.0015416666667" ixy="0" ixz="0" iyy="0.0106208333333" iyz="0" izz="0.0106208333333"/>
     </inertial>
     <!-- body -->
-    <collision name="collision_U_link">
+    <collision name="collision_U_link01">
       <geometry>
-        <box size="0.015 0.03 0.50"/>
+        <box size="0.015 0.03 0.25"/>
       </geometry>
     </collision>
   </link>
+
+  <link name="U_Link02">
+    <visual>
+      <geometry>
+        <box size="0.015 0.03 0.25"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="0 0 -0.125"/>
+      <material name="white"/>
+    </visual>
+
+    <inertial>
+      <mass value="0.1"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <inertia ixx="0.0015416666667" ixy="0" ixz="0" iyy="0.0106208333333" iyz="0" izz="0.0106208333333"/>
+    </inertial>
+    <!-- body -->
+    <collision name="collision_U_link02">
+      <geometry>
+        <box size="0.015 0.03 -0.125"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="U_link_extension" type="prismatic">
+    <parent link="U_Link01"/>
+    <child link="U_Link02"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="1000.0" lower="0.0" upper="0.45" velocity="0.5"/>
+    <origin rpy="0 0 0" xyz="0 0 0.125"/>
+  </joint>
 
   <link name="servo_mid">
     <visual>
@@ -147,7 +177,7 @@
 
     <inertial>
       <origin xyz="0 0 0" rpy="0 0 0" />
-      <mass value="0.6" />
+      <mass value="0.1" />
       <xacro:cylinder_inertia mass="0.6" r="0.015" l="0.05" />
     </inertial>
     <!-- body -->
@@ -168,7 +198,7 @@
     </visual>
 
     <inertial>
-      <mass value="0.1"/>
+      <mass value="0.08"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <inertia ixx="0.0015416666667" ixy="0" ixz="0" iyy="0.0106208333333" iyz="0" izz="0.0106208333333"/>
     </inertial>
@@ -188,18 +218,18 @@
 
   <joint name="joint_arm_01" type="revolute">
     <parent link="servo_bottom"/>
-    <child link="U_Link"/>
+    <child link="U_Link01"/>
     <axis xyz="0 0 1"/>
     <limit effort="1000.0" lower="-3.14" upper="3.14" velocity="0.5"/>
-    <origin xyz="0 0 0.27"/>
+    <origin xyz="0 0 0.125"/>
   </joint>
 
   <joint name="joint_arm_02" type="revolute">
-    <parent link="U_Link"/>
+    <parent link="U_Link02"/>
     <child link="servo_mid"/>
     <axis xyz="0 1 0"/>
     <limit effort="1000.0" lower="-1.57" upper="1.57" velocity="0.5"/>
-    <origin xyz="0 0 0.25" rpy="0 0 0"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
   </joint>
 
   <joint name="servo_mid_to_head_base" type="fixed">
@@ -237,6 +267,17 @@
 		<hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
 	</joint>
 	<actuator name="motor2">
+		<hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+		<mechanicalInterface>1</mechanicalInterface>
+	</actuator>
+</transmission>
+
+<transmission name="joint_link_extension_trans">
+	<type>transmission_interface/SimpleTransmission</type>
+	<joint name="U_link_extension">
+		<hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+	</joint>
+	<actuator name="motor3">
 		<hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
 		<mechanicalInterface>1</mechanicalInterface>
 	</actuator>
