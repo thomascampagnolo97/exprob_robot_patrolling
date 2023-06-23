@@ -46,7 +46,6 @@ SERVICE_SET_GOAL_COORDINATES = 'set_goal_coordinates'
 # ---------------------------------------------------------
 
 
-
 # Function used to label each log with a producer tag.
 def tag_log(msg, producer_tag):
     return '@%s>> %s' % (producer_tag, msg)
