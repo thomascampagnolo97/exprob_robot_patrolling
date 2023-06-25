@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Welcome to Experimental Robotics Laboratory Assignment 1: robot surveillance’s documentation! &mdash; Experimental Robotics Laboratory Assignment 1: robot surveillance 1.0 documentation</title>
+  <title>Welcome to Experimental Robotics Laboratory Assignment 2: robot patrolling’s documentation! &mdash; Experimental Robotics Laboratory Assignment 2: robot patrolling 1.0 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="_static/graphviz.css" type="text/css" />
@@ -27,7 +27,7 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="#" class="icon icon-home"> Experimental Robotics Laboratory Assignment 1: robot surveillance
+            <a href="#" class="icon icon-home"> Experimental Robotics Laboratory Assignment 2: robot patrolling
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -39,11 +39,15 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <!-- Local TOC -->
               <div class="local-toc"><ul>
-<li><a class="reference internal" href="#">Welcome to Experimental Robotics Laboratory Assignment 1: robot surveillance’s documentation!</a></li>
+<li><a class="reference internal" href="#">Welcome to Experimental Robotics Laboratory Assignment 2: robot patrolling’s documentation!</a></li>
 <li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
 <li><a class="reference internal" href="#module-scripts.fsm_behaviour">Finite State Machine Module</a><ul>
 <li><a class="reference internal" href="#scripts.fsm_behaviour.Build_world"><code class="docutils literal notranslate"><span class="pre">Build_world</span></code></a><ul>
 <li><a class="reference internal" href="#scripts.fsm_behaviour.Build_world.execute"><code class="docutils literal notranslate"><span class="pre">Build_world.execute()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#scripts.fsm_behaviour.Move2Recharging"><code class="docutils literal notranslate"><span class="pre">Move2Recharging</span></code></a><ul>
+<li><a class="reference internal" href="#scripts.fsm_behaviour.Move2Recharging.execute"><code class="docutils literal notranslate"><span class="pre">Move2Recharging.execute()</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#scripts.fsm_behaviour.No_emergency"><code class="docutils literal notranslate"><span class="pre">No_emergency</span></code></a><ul>
@@ -59,10 +63,13 @@
 </ul>
 </li>
 <li><a class="reference internal" href="#scripts.fsm_behaviour.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+<li><a class="reference internal" href="#scripts.fsm_behaviour.room_scan"><code class="docutils literal notranslate"><span class="pre">room_scan()</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#module-scripts.world_generator">World Generator Module</a><ul>
 <li><a class="reference internal" href="#scripts.world_generator.build_world"><code class="docutils literal notranslate"><span class="pre">build_world()</span></code></a></li>
+<li><a class="reference internal" href="#scripts.world_generator.extract_aruco"><code class="docutils literal notranslate"><span class="pre">extract_aruco()</span></code></a></li>
+<li><a class="reference internal" href="#scripts.world_generator.marker_reader"><code class="docutils literal notranslate"><span class="pre">marker_reader()</span></code></a></li>
 <li><a class="reference internal" href="#scripts.world_generator.timestamp_computation"><code class="docutils literal notranslate"><span class="pre">timestamp_computation()</span></code></a></li>
 </ul>
 </li>
@@ -70,20 +77,44 @@
 <li><a class="reference internal" href="#scripts.battery.battery_discharge"><code class="docutils literal notranslate"><span class="pre">battery_discharge()</span></code></a></li>
 <li><a class="reference internal" href="#scripts.battery.battery_recharge"><code class="docutils literal notranslate"><span class="pre">battery_recharge()</span></code></a></li>
 <li><a class="reference internal" href="#scripts.battery.main_battery_behaviour"><code class="docutils literal notranslate"><span class="pre">main_battery_behaviour()</span></code></a></li>
-<li><a class="reference internal" href="#scripts.battery.world_callback"><code class="docutils literal notranslate"><span class="pre">world_callback()</span></code></a></li>
+<li><a class="reference internal" href="#scripts.battery.recharge_callback"><code class="docutils literal notranslate"><span class="pre">recharge_callback()</span></code></a></li>
+<li><a class="reference internal" href="#scripts.battery.reset_goal"><code class="docutils literal notranslate"><span class="pre">reset_goal()</span></code></a></li>
+<li><a class="reference internal" href="#scripts.battery.sync_callback"><code class="docutils literal notranslate"><span class="pre">sync_callback()</span></code></a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#module-utilities.exprob_surveillance.state_machine_helper">Helper State Machine Module</a><ul>
-<li><a class="reference internal" href="#utilities.exprob_surveillance.state_machine_helper.Helper"><code class="docutils literal notranslate"><span class="pre">Helper</span></code></a><ul>
-<li><a class="reference internal" href="#utilities.exprob_surveillance.state_machine_helper.Helper.battery_callback"><code class="docutils literal notranslate"><span class="pre">Helper.battery_callback()</span></code></a></li>
-<li><a class="reference internal" href="#utilities.exprob_surveillance.state_machine_helper.Helper.motion_control"><code class="docutils literal notranslate"><span class="pre">Helper.motion_control()</span></code></a></li>
-<li><a class="reference internal" href="#utilities.exprob_surveillance.state_machine_helper.Helper.path_planning"><code class="docutils literal notranslate"><span class="pre">Helper.path_planning()</span></code></a></li>
-<li><a class="reference internal" href="#utilities.exprob_surveillance.state_machine_helper.Helper.robot_location"><code class="docutils literal notranslate"><span class="pre">Helper.robot_location()</span></code></a></li>
-<li><a class="reference internal" href="#utilities.exprob_surveillance.state_machine_helper.Helper.rooms_search"><code class="docutils literal notranslate"><span class="pre">Helper.rooms_search()</span></code></a></li>
-<li><a class="reference internal" href="#utilities.exprob_surveillance.state_machine_helper.Helper.set_urgency"><code class="docutils literal notranslate"><span class="pre">Helper.set_urgency()</span></code></a></li>
-<li><a class="reference internal" href="#utilities.exprob_surveillance.state_machine_helper.Helper.time_set"><code class="docutils literal notranslate"><span class="pre">Helper.time_set()</span></code></a></li>
-<li><a class="reference internal" href="#utilities.exprob_surveillance.state_machine_helper.Helper.urgency"><code class="docutils literal notranslate"><span class="pre">Helper.urgency()</span></code></a></li>
-<li><a class="reference internal" href="#utilities.exprob_surveillance.state_machine_helper.Helper.world_callback"><code class="docutils literal notranslate"><span class="pre">Helper.world_callback()</span></code></a></li>
+<li><a class="reference internal" href="#module-scripts.joint_pose_controller">Joint Pose Controller Module</a><ul>
+<li><a class="reference internal" href="#scripts.joint_pose_controller.callback_joint1"><code class="docutils literal notranslate"><span class="pre">callback_joint1()</span></code></a></li>
+<li><a class="reference internal" href="#scripts.joint_pose_controller.callback_joint2"><code class="docutils literal notranslate"><span class="pre">callback_joint2()</span></code></a></li>
+<li><a class="reference internal" href="#scripts.joint_pose_controller.callback_joint3"><code class="docutils literal notranslate"><span class="pre">callback_joint3()</span></code></a></li>
+<li><a class="reference internal" href="#scripts.joint_pose_controller.joint_action"><code class="docutils literal notranslate"><span class="pre">joint_action()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-scripts.robot_motion">Robot Motion Module</a><ul>
+<li><a class="reference internal" href="#scripts.robot_motion.callback_motion"><code class="docutils literal notranslate"><span class="pre">callback_motion()</span></code></a></li>
+<li><a class="reference internal" href="#scripts.robot_motion.motion_action"><code class="docutils literal notranslate"><span class="pre">motion_action()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-scripts.room_scan">Room Scan Module</a><ul>
+<li><a class="reference internal" href="#scripts.room_scan.callback_joint1"><code class="docutils literal notranslate"><span class="pre">callback_joint1()</span></code></a></li>
+<li><a class="reference internal" href="#scripts.room_scan.callback_scan_room"><code class="docutils literal notranslate"><span class="pre">callback_scan_room()</span></code></a></li>
+<li><a class="reference internal" href="#scripts.room_scan.scan_action"><code class="docutils literal notranslate"><span class="pre">scan_action()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-utilities.exprob_robot_patrolling.state_machine_helper">Helper State Machine Module</a><ul>
+<li><a class="reference internal" href="#utilities.exprob_robot_patrolling.state_machine_helper.Helper"><code class="docutils literal notranslate"><span class="pre">Helper</span></code></a><ul>
+<li><a class="reference internal" href="#utilities.exprob_robot_patrolling.state_machine_helper.Helper.battery_callback"><code class="docutils literal notranslate"><span class="pre">Helper.battery_callback()</span></code></a></li>
+<li><a class="reference internal" href="#utilities.exprob_robot_patrolling.state_machine_helper.Helper.common_connection"><code class="docutils literal notranslate"><span class="pre">Helper.common_connection()</span></code></a></li>
+<li><a class="reference internal" href="#utilities.exprob_robot_patrolling.state_machine_helper.Helper.extract_value"><code class="docutils literal notranslate"><span class="pre">Helper.extract_value()</span></code></a></li>
+<li><a class="reference internal" href="#utilities.exprob_robot_patrolling.state_machine_helper.Helper.go_to_coordinate"><code class="docutils literal notranslate"><span class="pre">Helper.go_to_coordinate()</span></code></a></li>
+<li><a class="reference internal" href="#utilities.exprob_robot_patrolling.state_machine_helper.Helper.motion_control"><code class="docutils literal notranslate"><span class="pre">Helper.motion_control()</span></code></a></li>
+<li><a class="reference internal" href="#utilities.exprob_robot_patrolling.state_machine_helper.Helper.path_planning"><code class="docutils literal notranslate"><span class="pre">Helper.path_planning()</span></code></a></li>
+<li><a class="reference internal" href="#utilities.exprob_robot_patrolling.state_machine_helper.Helper.robot_location"><code class="docutils literal notranslate"><span class="pre">Helper.robot_location()</span></code></a></li>
+<li><a class="reference internal" href="#utilities.exprob_robot_patrolling.state_machine_helper.Helper.room_dictionary"><code class="docutils literal notranslate"><span class="pre">Helper.room_dictionary()</span></code></a></li>
+<li><a class="reference internal" href="#utilities.exprob_robot_patrolling.state_machine_helper.Helper.rooms_search"><code class="docutils literal notranslate"><span class="pre">Helper.rooms_search()</span></code></a></li>
+<li><a class="reference internal" href="#utilities.exprob_robot_patrolling.state_machine_helper.Helper.set_urgency"><code class="docutils literal notranslate"><span class="pre">Helper.set_urgency()</span></code></a></li>
+<li><a class="reference internal" href="#utilities.exprob_robot_patrolling.state_machine_helper.Helper.time_set"><code class="docutils literal notranslate"><span class="pre">Helper.time_set()</span></code></a></li>
+<li><a class="reference internal" href="#utilities.exprob_robot_patrolling.state_machine_helper.Helper.urgency"><code class="docutils literal notranslate"><span class="pre">Helper.urgency()</span></code></a></li>
+<li><a class="reference internal" href="#utilities.exprob_robot_patrolling.state_machine_helper.Helper.world_callback"><code class="docutils literal notranslate"><span class="pre">Helper.world_callback()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -96,7 +127,7 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="#">Experimental Robotics Laboratory Assignment 1: robot surveillance</a>
+          <a href="#">Experimental Robotics Laboratory Assignment 2: robot patrolling</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -104,7 +135,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="#" class="icon icon-home"></a> &raquo;</li>
-      <li>Welcome to Experimental Robotics Laboratory Assignment 1: robot surveillance’s documentation!</li>
+      <li>Welcome to Experimental Robotics Laboratory Assignment 2: robot patrolling’s documentation!</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -114,8 +145,8 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <div class="section" id="welcome-to-experimental-robotics-laboratory-assignment-1-robot-surveillance-s-documentation">
-<h1>Welcome to Experimental Robotics Laboratory Assignment 1: robot surveillance’s documentation!<a class="headerlink" href="#welcome-to-experimental-robotics-laboratory-assignment-1-robot-surveillance-s-documentation" title="Permalink to this heading"></a></h1>
+  <div class="section" id="welcome-to-experimental-robotics-laboratory-assignment-2-robot-patrolling-s-documentation">
+<h1>Welcome to Experimental Robotics Laboratory Assignment 2: robot patrolling’s documentation!<a class="headerlink" href="#welcome-to-experimental-robotics-laboratory-assignment-2-robot-patrolling-s-documentation" title="Permalink to this heading"></a></h1>
 <div class="toctree-wrapper compound">
 </div>
 </div>
@@ -135,18 +166,23 @@ This is finite state machine that uses the <a class="reference external" href="h
 <dl class="simple">
 <dt>The FSM menages the surveillance behavior of the robot. It moves among locations with this policy:</dt><dd><ol class="arabic simple">
 <li><p>it should mainly stay on corridors,</p></li>
-<li><p>if a reachable room has not been visited for 20 seconds, the room become <strong>URGENT</strong> and the robot must visit it.</p></li>
+<li><p>if a reachable room has not been visited for 20 seconds, the room becomes <strong>URGENT</strong> and the robot must visit it.</p></li>
 </ol>
 </dd>
 </dl>
-<p>When the robot’s battery is low, it goes in the E location, and wait for some times (recharging action in <a class="reference internal" href="#module-battery" title="battery: Python code to change the battery level (Unix)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">battery</span></code></a> node) before to
-start again with the above behaviour.</p>
+<p>When the robot’s battery is low, it cancel any goals and goes in the E location with an energy saving mode. Here it waits
+for some times (recharging action in <a class="reference internal" href="#module-battery" title="battery: Python code that descrive the behaviour of the battery. DIscharge and recharge cycles. (Unix)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">battery</span></code></a> node) before to start again with the above behaviour.</p>
 <dl class="simple">
-<dt>Publishes to:</dt><dd><p>/world_battery_sync: a Boolean flag for synchronization reasons with the <a class="reference internal" href="#module-battery" title="battery: Python code to change the battery level (Unix)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">battery</span></code></a> node. When the world is correctly loaded
-the battery’s functionality start its execution</p>
+<dt>Publishes to:</dt><dd><ul class="simple">
+<li><p>/world_battery_sync: a Boolean flag for synchronization reasons with the <a class="reference internal" href="#module-battery" title="battery: Python code that descrive the behaviour of the battery. DIscharge and recharge cycles. (Unix)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">battery</span></code></a> node. When the world is correctly loaded the battery’s functionality start its execution</p></li>
+<li><p>/scanning_room: a Boolean flag for the <a class="reference internal" href="#module-room_scan" title="room_scan: Python code to move the arm such that the scanning is performed (Unix)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">room_scan</span></code></a> node. When the robot has reached the room it starts scanning the room for patrol purposes.</p></li>
+<li><p>/start_recharging: a Boolean flag that notify the robot’s position in the recharging station, room E</p></li>
+</ul>
 </dd>
-<dt>Subscribes  to:</dt><dd><p>/world_loading: a Boolean flag to communicate when the map is created correctly.
-/battery_signal: a Boolean flag to communicate when battery is low and when is fully charged</p>
+<dt>Subscribes  to:</dt><dd><ul class="simple">
+<li><p>/world_loading: a Boolean flag to communicate when the map is created correctly.</p></li>
+<li><p>/battery_signal: a Boolean flag to communicate when battery is low and when is fully charged</p></li>
+</ul>
 </dd>
 </dl>
 <dl class="py class">
@@ -174,6 +210,29 @@ In the base class this raises a NotImplementedError.</p>
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="scripts.fsm_behaviour.Move2Recharging">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scripts.fsm_behaviour.</span></span><span class="sig-name descname"><span class="pre">Move2Recharging</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">helper</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/fsm_behaviour.html#Move2Recharging"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.fsm_behaviour.Move2Recharging" title="Permalink to this definition"></a></dt>
+<dd><p>Class that defines the <code class="docutils literal notranslate"><span class="pre">MOVE2RECHARGING</span></code> state.
+The battery charge is low, advertised by <code class="docutils literal notranslate"><span class="pre">battery_callback</span></code> in <a class="reference internal" href="#module-battery" title="battery: Python code that descrive the behaviour of the battery. DIscharge and recharge cycles. (Unix)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">battery</span></code></a>, which will modify the variable flag <code class="docutils literal notranslate"><span class="pre">battery_status</span></code>.
+The robot will move towards the charging station.</p>
+<dl class="simple">
+<dt>Args</dt><dd><p>smachState: State base interface</p>
+</dd>
+<dt>Returns</dt><dd><p>TRANS_RECHARGE: transition that changes status, going to the <code class="docutils literal notranslate"><span class="pre">RECHARGING</span></code> state</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="scripts.fsm_behaviour.Move2Recharging.execute">
+<span class="sig-name descname"><span class="pre">execute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">userdata</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/fsm_behaviour.html#Move2Recharging.execute"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.fsm_behaviour.Move2Recharging.execute" title="Permalink to this definition"></a></dt>
+<dd><p>Called when executing a state.
+In the base class this raises a NotImplementedError.</p>
+<p>&#64;type ud: L{UserData} structure
+&#64;param ud: Userdata for the scope in which this state is executing</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="scripts.fsm_behaviour.No_emergency">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scripts.fsm_behaviour.</span></span><span class="sig-name descname"><span class="pre">No_emergency</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">helper</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/fsm_behaviour.html#No_emergency"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.fsm_behaviour.No_emergency" title="Permalink to this definition"></a></dt>
 <dd><p>Class that defines the <code class="docutils literal notranslate"><span class="pre">NO_EMERGENCY</span></code> state.
@@ -181,17 +240,17 @@ The robot will stay in the corridors until any room becomes <strong>URGENT</stro
 <dl class="simple">
 <dt>The logic is:</dt><dd><ul class="simple">
 <li><p>the robot will start in one corridor;</p></li>
-<li><p>if no room is URGENT, the robot stays in the corridor 3 seconds and change to the other corridor with the function <code class="docutils literal notranslate"><span class="pre">motion_control</span></code> in <a class="reference internal" href="#module-state_machine_helper" title="state_machine_helper (Unix :synopsis: Python module for the Helper of the State Machine)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">state_machine_helper</span></code></a></p></li>
+<li><p>if no room is URGENT, the robot stays in the corridor for some times and change to the other corridor with the function <code class="docutils literal notranslate"><span class="pre">motion_control</span></code> in <a class="reference internal" href="#module-state_machine_helper" title="state_machine_helper (Unix :synopsis: Python module for the Helper of the State Machine)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">state_machine_helper</span></code></a></p></li>
 <li><p>if one or more rooms becomes <em>URGENT</em>, the FSM goes to the state <code class="docutils literal notranslate"><span class="pre">SURVEILLANCE</span></code>.</p></li>
 </ul>
 </dd>
 </dl>
-<p><strong>Important</strong>: the state gets notified by the <code class="docutils literal notranslate"><span class="pre">battery_callback</span></code> in <a class="reference internal" href="#module-battery" title="battery: Python code to change the battery level (Unix)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">battery</span></code></a> which is the callback of the topic <code class="docutils literal notranslate"><span class="pre">/battery_signal</span></code> with higher priority.
+<p><strong>Important</strong>: the state gets notified by the <code class="docutils literal notranslate"><span class="pre">battery_callback</span></code> in <a class="reference internal" href="#module-battery" title="battery: Python code that descrive the behaviour of the battery. DIscharge and recharge cycles. (Unix)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">battery</span></code></a> which is the callback of the topic <code class="docutils literal notranslate"><span class="pre">/battery_signal</span></code> with higher priority.
 This interrupt any other action performed in the other states.</p>
 <dl class="simple">
 <dt>Args</dt><dd><p>smachState: State base interface</p>
 </dd>
-<dt>Returns</dt><dd><p>TRANS_BATTERY_LOW: transition that change status going to the <code class="docutils literal notranslate"><span class="pre">RECHARGING</span></code>
+<dt>Returns</dt><dd><p>TRANS_BATTERY_LOW: transition that change status going to the <code class="docutils literal notranslate"><span class="pre">MOVE2RECHARGING</span></code>
 TRANS_URGENT_ROOM: transition that will make this state end and go to the <code class="docutils literal notranslate"><span class="pre">SURVEILLANCE</span></code>
 TRANS_NO_URGENT_ROOM: loop transition that will keep the FSM active in this state</p>
 </dd>
@@ -211,12 +270,14 @@ In the base class this raises a NotImplementedError.</p>
 <dt class="sig sig-object py" id="scripts.fsm_behaviour.Recharging">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scripts.fsm_behaviour.</span></span><span class="sig-name descname"><span class="pre">Recharging</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">helper</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/fsm_behaviour.html#Recharging"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.fsm_behaviour.Recharging" title="Permalink to this definition"></a></dt>
 <dd><p>Class that defines the <code class="docutils literal notranslate"><span class="pre">RECHARGING</span></code> state.
-The battery charge is low, advertised by <code class="docutils literal notranslate"><span class="pre">battery_callback</span></code> in <a class="reference internal" href="#module-battery" title="battery: Python code to change the battery level (Unix)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">battery</span></code></a>, which will modify the variable flag <code class="docutils literal notranslate"><span class="pre">battery_status</span></code>.</p>
+The battery charge is low, advertised by <code class="docutils literal notranslate"><span class="pre">battery_callback</span></code> in <a class="reference internal" href="#module-battery" title="battery: Python code that descrive the behaviour of the battery. DIscharge and recharge cycles. (Unix)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">battery</span></code></a>, which will modify the variable flag <code class="docutils literal notranslate"><span class="pre">battery_status</span></code>.
+If the robot is at the charging station (room E) the <code class="docutils literal notranslate"><span class="pre">start_recharge</span></code> flag is published in <a class="reference internal" href="#module-battery" title="battery: Python code that descrive the behaviour of the battery. DIscharge and recharge cycles. (Unix)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">battery</span></code></a> so that the node starts the
+recharging cycle.</p>
 <dl class="simple">
 <dt>Args</dt><dd><p>smachState: State base interface</p>
 </dd>
 <dt>Returns</dt><dd><p>TRANS_BATTERY_CHARGED: transition that changes status, going back to the <code class="docutils literal notranslate"><span class="pre">NO_EMERGENCY</span></code> state
-TRANS_BATTERY_LOW: loop transition that will keep the FSM active in this state as long as the battery becomes fully recharged</p>
+TRANS_RECHARGE: loop transition that will keep the FSM active in this state as long as the battery becomes fully recharged</p>
 </dd>
 </dl>
 <dl class="py method">
@@ -234,11 +295,12 @@ In the base class this raises a NotImplementedError.</p>
 <dt class="sig sig-object py" id="scripts.fsm_behaviour.Surveillance">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scripts.fsm_behaviour.</span></span><span class="sig-name descname"><span class="pre">Surveillance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">helper</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/fsm_behaviour.html#Surveillance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.fsm_behaviour.Surveillance" title="Permalink to this definition"></a></dt>
 <dd><p>Class that defines the <code class="docutils literal notranslate"><span class="pre">SURVEILLANCE</span></code> state. Only when the <code class="docutils literal notranslate"><span class="pre">urgency_status</span></code> variable is <code class="docutils literal notranslate"><span class="pre">1</span></code> the robot must visit the urgency rooms.
-It calls the <code class="docutils literal notranslate"><span class="pre">motion_control</span></code> function in <a class="reference internal" href="#module-state_machine_helper" title="state_machine_helper (Unix :synopsis: Python module for the Helper of the State Machine)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">state_machine_helper</span></code></a> to move the robot and gets advertised by the <code class="docutils literal notranslate"><span class="pre">battery_callback</span></code> in <a class="reference internal" href="#module-battery" title="battery: Python code to change the battery level (Unix)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">battery</span></code></a> in case of low battery.</p>
+It calls the <code class="docutils literal notranslate"><span class="pre">motion_control</span></code> function in <a class="reference internal" href="#module-state_machine_helper" title="state_machine_helper (Unix :synopsis: Python module for the Helper of the State Machine)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">state_machine_helper</span></code></a> to move the robot and gets advertised by the <code class="docutils literal notranslate"><span class="pre">battery_callback</span></code>
+in <a class="reference internal" href="#module-battery" title="battery: Python code that descrive the behaviour of the battery. DIscharge and recharge cycles. (Unix)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">battery</span></code></a> in case of low battery.</p>
 <dl class="simple">
 <dt>Args</dt><dd><p>smachState: State base interface</p>
 </dd>
-<dt>Returns</dt><dd><p>TRANS_BATTERY_LOW: transition that change status to the <code class="docutils literal notranslate"><span class="pre">RECHARGING</span></code> state
+<dt>Returns</dt><dd><p>TRANS_BATTERY_LOW: transition that change status to the <code class="docutils literal notranslate"><span class="pre">MOVE2RECHARGING</span></code> state
 TRANS_NO_URGENT_ROOM: transition that specifies that no other room are urgent anymore and changes status to <code class="docutils literal notranslate"><span class="pre">NO_EMERGENCY</span></code> state
 TRANS_URGENT_ROOM: loop transition that will keep the FSM active in this state</p>
 </dd>
@@ -263,6 +325,14 @@ Since the behaviour of the battery has higher priority with respect to all the o
 the subscriber of the battery topic.</p>
 </dd></dl>
 
+<dl class="py function">
+<dt class="sig sig-object py" id="scripts.fsm_behaviour.room_scan">
+<span class="sig-prename descclassname"><span class="pre">scripts.fsm_behaviour.</span></span><span class="sig-name descname"><span class="pre">room_scan</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/fsm_behaviour.html#room_scan"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.fsm_behaviour.room_scan" title="Permalink to this definition"></a></dt>
+<dd><p>Function that controls the joint1 such that the robot can perform a scanning of the room with the camera.
+Joint 1 will rotate to scan the room.
+To do this purpose, the movement of the robot arm is implemented in <a class="reference internal" href="#module-room_scan" title="room_scan: Python code to move the arm such that the scanning is performed (Unix)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">room_scan</span></code></a>.</p>
+</dd></dl>
+
 </div>
 <div class="section" id="module-scripts.world_generator">
 <span id="world-generator-module"></span><h1>World Generator Module<a class="headerlink" href="#module-scripts.world_generator" title="Permalink to this heading"></a></h1>
@@ -276,6 +346,8 @@ The 2D environment is composed by:</p>
 <li><p>7 doors (D1, D2, D3, D4, D5, D6, D7).</p></li>
 </ul>
 </div></blockquote>
+<p>The name of the rooms, the respective information and the relationships between them,
+are extracted from the initial reading of the markers.</p>
 <dl class="simple">
 <dt>Publishes to:</dt><dd><p>/world_loading: a boolean flag to communicate when the environment is created</p>
 </dd>
@@ -286,6 +358,36 @@ The 2D environment is composed by:</p>
 <dd><p>This main function initialize the <a class="reference internal" href="#module-world_generator" title="world_generator: Python code to create the OWL ontology (Unix)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">world_generator</span></code></a> node, the publisher and allows to use the
 <a class="reference external" href="https://github.com/EmaroLab/armor/blob/master/commands.md">Armor commands</a> to create the final ontology.
 It will publish a boolean that will be passed to the state <code class="docutils literal notranslate"><span class="pre">BUILD_WORLD</span></code> of the FSM, advertised by <a class="reference internal" href="#module-fsm_behaviour" title="fsm_behaviour: Python code of the finite state machine for the robot (Unix)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">fsm_behaviour</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="scripts.world_generator.extract_aruco">
+<span class="sig-prename descclassname"><span class="pre">scripts.world_generator.</span></span><span class="sig-name descname"><span class="pre">extract_aruco</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">string</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/world_generator.html#extract_aruco"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.world_generator.extract_aruco" title="Permalink to this definition"></a></dt>
+<dd><p>Call back function that extracts Aruco marker IDs from a string and appends them to the global list of markers if they are not
+already present.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>String</strong> (<em>-</em>) – </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="scripts.world_generator.marker_reader">
+<span class="sig-prename descclassname"><span class="pre">scripts.world_generator.</span></span><span class="sig-name descname"><span class="pre">marker_reader</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/world_generator.html#marker_reader"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.world_generator.marker_reader" title="Permalink to this definition"></a></dt>
+<dd><p>ROS Node to read the data from the subscribed topic <code class="docutils literal notranslate"><span class="pre">/marker_publisher/target</span></code> and extract the markers’ IDs.
+When all the markers are detected, the node will shutdown the marker_publisher node, publish a boolean flag to the ‘/world_loading’ topic
+and call the function <code class="docutils literal notranslate"><span class="pre">build_world</span></code>.</p>
+<dl class="simple">
+<dt>Subscribes to:</dt><dd><ul class="simple">
+<li><p>/marker_publisher/target: a string containing the markers’ IDs.</p></li>
+</ul>
+</dd>
+<dt>Publishes to:</dt><dd><ul class="simple">
+<li><p>/world_loading: a boolean flag to communicate when the map is ready to be built.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
@@ -310,31 +412,45 @@ It will publish a boolean that will be passed to the state <code class="docutils
 <span id="battery-module"></span><h1>Battery Module<a class="headerlink" href="#module-scripts.battery" title="Permalink to this heading"></a></h1>
 <span class="target" id="module-battery"></span><p>ROS node which defines the behavior of the robot battery. This node simulate quite realistically the battery discharge
 and charge cycles with the use of a counter variable <code class="docutils literal notranslate"><span class="pre">battery_level</span></code> and the time parameters <code class="docutils literal notranslate"><span class="pre">time_discharge</span></code> and <code class="docutils literal notranslate"><span class="pre">time_recharge</span></code>.
-If the battery is fully charged, the <code class="docutils literal notranslate"><span class="pre">battery_status</span></code> is published to <code class="docutils literal notranslate"><span class="pre">1</span></code>. If instead the battery level is below the minimum threshold
-then <code class="docutils literal notranslate"><span class="pre">battery_status</span></code> is <code class="docutils literal notranslate"><span class="pre">0</span></code>. Depending on this, the <a class="reference internal" href="#module-fsm_behaviour" title="fsm_behaviour: Python code of the finite state machine for the robot (Unix)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">fsm_behaviour</span></code></a> changes its execution between <code class="docutils literal notranslate"><span class="pre">RECHARGING</span></code> state and all the others states.</p>
+If the battery is fully charged, the <code class="docutils literal notranslate"><span class="pre">battery_status</span></code> is published to <code class="docutils literal notranslate"><span class="pre">1</span></code>. If instead the battery level is below the threshold
+then <code class="docutils literal notranslate"><span class="pre">battery_status</span></code> is <code class="docutils literal notranslate"><span class="pre">0</span></code>, indicating that the battery is low on charge. For this reason, the <a class="reference internal" href="#module-fsm_behaviour" title="fsm_behaviour: Python code of the finite state machine for the robot (Unix)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">fsm_behaviour</span></code></a> changes its
+execution between all the others states to <code class="docutils literal notranslate"><span class="pre">MOVE2RECHARGING</span></code> and  <code class="docutils literal notranslate"><span class="pre">RECHARGING</span></code> states.</p>
 <dl class="simple">
 <dt>Publishes to:</dt><dd><p>/battery_signal: a boolean flag to communicate when battery is low and when is totally charged</p>
 </dd>
 <dt>Subscribes  to:</dt><dd><p>/world_battery_sync: a Boolean flag for synchronization reasons with the <a class="reference internal" href="#module-fsm_behaviour" title="fsm_behaviour: Python code of the finite state machine for the robot (Unix)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">fsm_behaviour</span></code></a> node. When the world is correctly loaded
-the battery’s functionality start its execution.</p>
+the battery’s functionality start its execution.
+/start_recharging: a boolean flag used to indicate that the robot is in the recharging station and therefore the battery recharging cycle can begin.</p>
 </dd>
 </dl>
 <dl class="py function">
 <dt class="sig sig-object py" id="scripts.battery.battery_discharge">
-<span class="sig-prename descclassname"><span class="pre">scripts.battery.</span></span><span class="sig-name descname"><span class="pre">battery_discharge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">level</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/battery.html#battery_discharge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.battery.battery_discharge" title="Permalink to this definition"></a></dt>
-<dd><p>This function defines the battery discharge cycle. Starting from the maximum capacity (<code class="docutils literal notranslate"><span class="pre">BATTERY_CAPACITY</span></code>),
-the level is decreased in steps of 2 for each discharge time parameter.
+<span class="sig-prename descclassname"><span class="pre">scripts.battery.</span></span><span class="sig-name descname"><span class="pre">battery_discharge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">set_flag</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">level</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/battery.html#battery_discharge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.battery.battery_discharge" title="Permalink to this definition"></a></dt>
+<dd><p>This function defines the battery discharge cycle. In general, the execution start from the maximum capacity (<code class="docutils literal notranslate"><span class="pre">BATTERY_CAPACITY</span></code>).
+The level is decreased in steps of 2 for each discharge time parameter.
 If the level reaches values lower than or equal to the minimum charge <code class="docutils literal notranslate"><span class="pre">threshold</span></code>, the <code class="docutils literal notranslate"><span class="pre">battery_status</span></code> is set to <code class="docutils literal notranslate"><span class="pre">0</span></code>.
-This indicates that the battery is low and must be recharged.</p>
+This indicates that the battery is low and the robot must move towards the charging station, room E.
+While moving towards this position, the discharge cycle parameters are modified in order to continue the discharge of the
+battery starting from the current charge level and the discharge time is longer to allow the robot to reach room E to recharge
+the battery (behavior like energy saving).
+If the synchronization flag with recharging <code class="docutils literal notranslate"><span class="pre">sync_recharge</span></code> is <code class="docutils literal notranslate"><span class="pre">1</span></code> this means that the robot has reached the recharging
+station and therefore the discharge cycle is interrupted to allow the robot to recharge.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>level</strong> – counter variable that simulates the dynamic level of the battery during the cycle</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>set_flag</strong> (<em>-</em>) – flag that sets the discharge mode, standard or energy saving</p></li>
+<li><p><strong>level</strong> (<em>-</em>) – counter variable that simulates the dynamic level of the battery during the cycle</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>the battery flag</p>
+<dd class="field-even"><p>the battery flag
+- level: actual battery level</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>battery_status</p>
+<dd class="field-odd"><p><ul class="simple">
+<li><p>battery_status</p></li>
+</ul>
+</p>
 </dd>
 </dl>
 </dd></dl>
@@ -351,10 +467,14 @@ This indicates that the battery is fully recharged.</p>
 <dd class="field-odd"><p><strong>level</strong> – counter variable that simulates the dynamic level of the battery during the cycle</p>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>the battery flag</p>
+<dd class="field-even"><p>the battery flag
+- level: actual battery level</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>battery_status</p>
+<dd class="field-odd"><p><ul class="simple">
+<li><p>battery_status</p></li>
+</ul>
+</p>
 </dd>
 </dl>
 </dd></dl>
@@ -369,25 +489,172 @@ and published in the dedicated topic.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="scripts.battery.world_callback">
-<span class="sig-prename descclassname"><span class="pre">scripts.battery.</span></span><span class="sig-name descname"><span class="pre">world_callback</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/battery.html#world_callback"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.battery.world_callback" title="Permalink to this definition"></a></dt>
-<dd><p>Callback function for the fsm publisher <code class="docutils literal notranslate"><span class="pre">/world_battery_sync</span></code>, that modifies the value of the global variable <code class="docutils literal notranslate"><span class="pre">world_done</span></code> and will let the code start.</p>
+<dt class="sig sig-object py" id="scripts.battery.recharge_callback">
+<span class="sig-prename descclassname"><span class="pre">scripts.battery.</span></span><span class="sig-name descname"><span class="pre">recharge_callback</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/battery.html#recharge_callback"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.battery.recharge_callback" title="Permalink to this definition"></a></dt>
+<dd><p>Callback function for the fsm publisher <code class="docutils literal notranslate"><span class="pre">/start_recharging</span></code>, that modifies the value of the global variable <code class="docutils literal notranslate"><span class="pre">sync_recharge</span></code>
+and will let the recharging cycle begins.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="scripts.battery.reset_goal">
+<span class="sig-prename descclassname"><span class="pre">scripts.battery.</span></span><span class="sig-name descname"><span class="pre">reset_goal</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/battery.html#reset_goal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.battery.reset_goal" title="Permalink to this definition"></a></dt>
+<dd><p>Function that cancels any existing goals using the Action client for the <code class="docutils literal notranslate"><span class="pre">move_base</span></code> action server</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="scripts.battery.sync_callback">
+<span class="sig-prename descclassname"><span class="pre">scripts.battery.</span></span><span class="sig-name descname"><span class="pre">sync_callback</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/battery.html#sync_callback"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.battery.sync_callback" title="Permalink to this definition"></a></dt>
+<dd><p>Callback function for the fsm publisher <code class="docutils literal notranslate"><span class="pre">/world_battery_sync</span></code>, that modifies the value of the global variable <code class="docutils literal notranslate"><span class="pre">sync_status</span></code> and will let the code start.</p>
 </dd></dl>
 
 </div>
-<div class="section" id="module-utilities.exprob_surveillance.state_machine_helper">
-<span id="helper-state-machine-module"></span><h1>Helper State Machine Module<a class="headerlink" href="#module-utilities.exprob_surveillance.state_machine_helper" title="Permalink to this heading"></a></h1>
+<div class="section" id="module-scripts.joint_pose_controller">
+<span id="joint-pose-controller-module"></span><h1>Joint Pose Controller Module<a class="headerlink" href="#module-scripts.joint_pose_controller" title="Permalink to this heading"></a></h1>
+<span class="target" id="module-joint_pose_controller"></span><p>The purpose of this script is to control the joints of the robot arm to the desired position.
+To do that, it publishes commands to the topic “robot_patrolling_explorer/joint*_position_controller/command” and
+subscribes to the topic “robot_patrolling_explorer/joint*_position_controller/state” to monitor the joint’s position.</p>
+<p>The implemented control of the joints allows the robot arm to perform a movement such as to be able to detect and scan
+all the markers in order to build the ontology and the map of the environment.</p>
+<dl class="simple">
+<dt>Publishes to:</dt><dd><p>/robot_patrolling_explorer/joint1_position_controller/command: joint 1 command
+/robot_patrolling_explorer/joint2_position_controller/command: joint 2 command
+/robot_patrolling_explorer/joint3_position_controller/command: joint 3 command</p>
+</dd>
+<dt>Subscribes  to:</dt><dd><p>/robot_patrolling_explorer/joint1_position_controller/state: joint 1 control state
+/robot_patrolling_explorer/joint2_position_controller/state: joint 2 control state
+/robot_patrolling_explorer/joint3_position_controller/state: joint 3 control state</p>
+</dd>
+</dl>
+<dl class="py function">
+<dt class="sig sig-object py" id="scripts.joint_pose_controller.callback_joint1">
+<span class="sig-prename descclassname"><span class="pre">scripts.joint_pose_controller.</span></span><span class="sig-name descname"><span class="pre">callback_joint1</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/joint_pose_controller.html#callback_joint1"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.joint_pose_controller.callback_joint1" title="Permalink to this definition"></a></dt>
+<dd><p>Callback function for the joint1 position.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>JointControllerState</strong> (<em>-</em>) – </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="scripts.joint_pose_controller.callback_joint2">
+<span class="sig-prename descclassname"><span class="pre">scripts.joint_pose_controller.</span></span><span class="sig-name descname"><span class="pre">callback_joint2</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/joint_pose_controller.html#callback_joint2"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.joint_pose_controller.callback_joint2" title="Permalink to this definition"></a></dt>
+<dd><p>Callback function for the joint2 position.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>JointControllerState</strong> (<em>-</em>) – </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="scripts.joint_pose_controller.callback_joint3">
+<span class="sig-prename descclassname"><span class="pre">scripts.joint_pose_controller.</span></span><span class="sig-name descname"><span class="pre">callback_joint3</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/joint_pose_controller.html#callback_joint3"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.joint_pose_controller.callback_joint3" title="Permalink to this definition"></a></dt>
+<dd><p>Callback function for the joint3 position.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>JointControllerState</strong> (<em>-</em>) – </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="scripts.joint_pose_controller.joint_action">
+<span class="sig-prename descclassname"><span class="pre">scripts.joint_pose_controller.</span></span><span class="sig-name descname"><span class="pre">joint_action</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/joint_pose_controller.html#joint_action"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.joint_pose_controller.joint_action" title="Permalink to this definition"></a></dt>
+<dd><p>”
+This function controls the commands passed to the joints. Joint 1,2 and 3 will rotate to scan the room.”</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>- ROSInterruptException</strong> – </p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-scripts.robot_motion">
+<span id="robot-motion-module"></span><h1>Robot Motion Module<a class="headerlink" href="#module-scripts.robot_motion" title="Permalink to this heading"></a></h1>
+<span class="target" id="module-robot_motion"></span><p>ROS Service to move the robot to a desired position specified with the x-y coordinates in the request.</p>
+<dl class="simple">
+<dt>Service:</dt><dd><ul class="simple">
+<li><p>name: /get_coordinate</p></li>
+<li><p>request containing the desired x and y position</p></li>
+</ul>
+</dd>
+<dt>Service response:</dt><dd><ul class="simple">
+<li><p>indicating whether the robot reached the target position or not</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py function">
+<dt class="sig sig-object py" id="scripts.robot_motion.callback_motion">
+<span class="sig-prename descclassname"><span class="pre">scripts.robot_motion.</span></span><span class="sig-name descname"><span class="pre">callback_motion</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/robot_motion.html#callback_motion"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.robot_motion.callback_motion" title="Permalink to this definition"></a></dt>
+<dd><p>Callback function for the <cite>/get_coordinate</cite> service. Recives as input the desired coordinates and uses the Action client for <cite>move_base</cite>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="scripts.robot_motion.motion_action">
+<span class="sig-prename descclassname"><span class="pre">scripts.robot_motion.</span></span><span class="sig-name descname"><span class="pre">motion_action</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/robot_motion.html#motion_action"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.robot_motion.motion_action" title="Permalink to this definition"></a></dt>
+<dd><p>Initializes the <cite>/get_coordinate</cite> service and the <cite>robot_motion</cite> node.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-scripts.room_scan">
+<span id="room-scan-module"></span><h1>Room Scan Module<a class="headerlink" href="#module-scripts.room_scan" title="Permalink to this heading"></a></h1>
+<span class="target" id="module-room_scan"></span><p>This script control the joint 1 of the robot arm.
+It does this by publishing commands to the topic “robot_patrolling_explorer/joint1_position_controller/command” and
+subscribing to the topic “robot_patrolling_explorer/joint1_position_controller/state” to monitor the joint’s position.</p>
+<p>The implemented control of the joint allows the robot arm to perform a rotational movement such as to be able to scan
+the room for patrolling purposes.</p>
+<dl class="simple">
+<dt>Publishes to:</dt><dd><p>/robot_patrolling_explorer/joint1_position_controller/command: joint 1 command</p>
+</dd>
+<dt>Subscribes  to:</dt><dd><p>/robot_patrolling_explorer/joint1_position_controller/state: joint 1 control state</p>
+</dd>
+</dl>
+<dl class="py function">
+<dt class="sig sig-object py" id="scripts.room_scan.callback_joint1">
+<span class="sig-prename descclassname"><span class="pre">scripts.room_scan.</span></span><span class="sig-name descname"><span class="pre">callback_joint1</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/room_scan.html#callback_joint1"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.room_scan.callback_joint1" title="Permalink to this definition"></a></dt>
+<dd><p>Callback function for the joint position.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>JointControllerState</strong> (<em>-</em>) – </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="scripts.room_scan.callback_scan_room">
+<span class="sig-prename descclassname"><span class="pre">scripts.room_scan.</span></span><span class="sig-name descname"><span class="pre">callback_scan_room</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/room_scan.html#callback_scan_room"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.room_scan.callback_scan_room" title="Permalink to this definition"></a></dt>
+<dd><p>Callback function for the fsm publisher <code class="docutils literal notranslate"><span class="pre">/scanning_room</span></code>, that modifies the value of the global variable <code class="docutils literal notranslate"><span class="pre">scan_room</span></code> and will let the
+room scan begin.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="scripts.room_scan.scan_action">
+<span class="sig-prename descclassname"><span class="pre">scripts.room_scan.</span></span><span class="sig-name descname"><span class="pre">scan_action</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/scripts/room_scan.html#scan_action"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scripts.room_scan.scan_action" title="Permalink to this definition"></a></dt>
+<dd><p>”
+This function controls the commands passed to the joint. Joint 1 will rotate to scan the room.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>- ROSInterruptException</strong> – </p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-utilities.exprob_robot_patrolling.state_machine_helper">
+<span id="helper-state-machine-module"></span><h1>Helper State Machine Module<a class="headerlink" href="#module-utilities.exprob_robot_patrolling.state_machine_helper" title="Permalink to this heading"></a></h1>
 <span class="target" id="module-state_machine_helper"></span><p>ROS node in support of the main node <a class="reference internal" href="#module-fsm_behaviour" title="fsm_behaviour: Python code of the finite state machine for the robot (Unix)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">fsm_behaviour</span></code></a>. The software architecture allows initializing a
 helper class for the Final State Machine which controls the behavior of a surveillance robot.
 This node allows to have cleaner and more readable code in the <code class="docutils literal notranslate"><span class="pre">fsm_behaviour.py</span></code> node, in fact, every task
 called in the previously mentioned code is defined in the current code.</p>
 <dl class="py class">
-<dt class="sig sig-object py" id="utilities.exprob_surveillance.state_machine_helper.Helper">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">utilities.exprob_surveillance.state_machine_helper.</span></span><span class="sig-name descname"><span class="pre">Helper</span></span><a class="reference internal" href="_modules/utilities/exprob_surveillance/state_machine_helper.html#Helper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utilities.exprob_surveillance.state_machine_helper.Helper" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="utilities.exprob_robot_patrolling.state_machine_helper.Helper">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">utilities.exprob_robot_patrolling.state_machine_helper.</span></span><span class="sig-name descname"><span class="pre">Helper</span></span><a class="reference internal" href="_modules/utilities/exprob_robot_patrolling/state_machine_helper.html#Helper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utilities.exprob_robot_patrolling.state_machine_helper.Helper" title="Permalink to this definition"></a></dt>
 <dd><p>This class is created to decouple the implementation of the Finite State Machine, allowing to have a more readable and cleaner code in the <code class="docutils literal notranslate"><span class="pre">fsm_behaviour.py</span></code> node.</p>
 <dl class="py method">
-<dt class="sig sig-object py" id="utilities.exprob_surveillance.state_machine_helper.Helper.battery_callback">
-<span class="sig-name descname"><span class="pre">battery_callback</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utilities/exprob_surveillance/state_machine_helper.html#Helper.battery_callback"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utilities.exprob_surveillance.state_machine_helper.Helper.battery_callback" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="utilities.exprob_robot_patrolling.state_machine_helper.Helper.battery_callback">
+<span class="sig-name descname"><span class="pre">battery_callback</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utilities/exprob_robot_patrolling/state_machine_helper.html#Helper.battery_callback"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utilities.exprob_robot_patrolling.state_machine_helper.Helper.battery_callback" title="Permalink to this definition"></a></dt>
 <dd><p>Callback function for the map publisher <code class="docutils literal notranslate"><span class="pre">/battery_signal</span></code>, that modifies the value of the global variable <code class="docutils literal notranslate"><span class="pre">battery_status</span></code> and will let the code start.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -405,18 +672,70 @@ called in the previously mentioned code is defined in the current code.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="utilities.exprob_surveillance.state_machine_helper.Helper.motion_control">
-<span class="sig-name descname"><span class="pre">motion_control</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">robPos</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">desPos</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utilities/exprob_surveillance/state_machine_helper.html#Helper.motion_control"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utilities.exprob_surveillance.state_machine_helper.Helper.motion_control" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="utilities.exprob_robot_patrolling.state_machine_helper.Helper.common_connection">
+<span class="sig-name descname"><span class="pre">common_connection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">list1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">list2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utilities/exprob_robot_patrolling/state_machine_helper.html#Helper.common_connection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utilities.exprob_robot_patrolling.state_machine_helper.Helper.common_connection" title="Permalink to this definition"></a></dt>
+<dd><p>Method that returns the common value between the two lists.</p>
+<dl class="simple">
+<dt>Args</dt><dd><ul class="simple">
+<li><p>list1: list 1 of rooms</p></li>
+<li><p>list2: list 2 of rooms</p></li>
+</ul>
+</dd>
+<dt>Returns</dt><dd><p>The common value (common room between the two lists)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="utilities.exprob_robot_patrolling.state_machine_helper.Helper.extract_value">
+<span class="sig-name descname"><span class="pre">extract_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_list</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utilities/exprob_robot_patrolling/state_machine_helper.html#Helper.extract_value"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utilities.exprob_robot_patrolling.state_machine_helper.Helper.extract_value" title="Permalink to this definition"></a></dt>
+<dd><p>Method to rewrite the queried time stamp or coordinate, deleting the not digit part of the string, for both Rooms and Robot’s data property</p>
+<dl class="simple">
+<dt>Args</dt><dd><ul class="simple">
+<li><p>input_list: list of queried objects section of the Armor service message</p></li>
+</ul>
+</dd>
+<dt>Returns</dt><dd><p>all the element between the double quotes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="utilities.exprob_robot_patrolling.state_machine_helper.Helper.go_to_coordinate">
+<span class="sig-name descname"><span class="pre">go_to_coordinate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coor</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utilities/exprob_robot_patrolling/state_machine_helper.html#Helper.go_to_coordinate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utilities.exprob_robot_patrolling.state_machine_helper.Helper.go_to_coordinate" title="Permalink to this definition"></a></dt>
+<dd><p>Method that moves the robot to the specified coordinates by calling the <code class="docutils literal notranslate"><span class="pre">/get_coordinate</span></code> service. If the service
+returns that the target coordinates have been reached, the function returns <code class="docutils literal notranslate"><span class="pre">1</span></code>. If the target coordinates have not
+been reached, the function calls itself again to try moving to the target coordinates again.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>coor</strong> (<em>-</em>) – A string representing the key for the desired coordinates in the global dictionary coordinates.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>An integer indicating whether the target coordinates have been reached <code class="docutils literal notranslate"><span class="pre">1</span></code> or not <code class="docutils literal notranslate"><span class="pre">0</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><ul class="simple">
+<li><p>response.return</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="utilities.exprob_robot_patrolling.state_machine_helper.Helper.motion_control">
+<span class="sig-name descname"><span class="pre">motion_control</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">desPos</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utilities/exprob_robot_patrolling/state_machine_helper.html#Helper.motion_control"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utilities.exprob_robot_patrolling.state_machine_helper.Helper.motion_control" title="Permalink to this definition"></a></dt>
 <dd><p>Method used when the Robot has to change its position in the environment.</p>
 <dl class="simple">
-<dt>This is the main function that define the motion of the robot in the map and takes the help of three other functions</dt><dd><ul class="simple">
+<dt>This is the main function that define the motion of the robot in the map and takes the help of other functions:</dt><dd><ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">rooms_search</span></code>;</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">path_planning</span></code>;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">common_connection</span></code>;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">robot_location</span></code>;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">go_to_coordinate</span></code>;</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">time_set</span></code>.</p></li>
 </ul>
 </dd>
 <dt>Args</dt><dd><p>self: instance of the current class
-robPos: is the actual robot position when this function is called
 desPos: is the desired robot position</p>
 </dd>
 <dt>Returns</dt><dd><p>robot_position: the updated robot position at the end of the movement, when the location is changed</p>
@@ -425,8 +744,8 @@ desPos: is the desired robot position</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="utilities.exprob_surveillance.state_machine_helper.Helper.path_planning">
-<span class="sig-name descname"><span class="pre">path_planning</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">listNow</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">listDes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">robPos</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utilities/exprob_surveillance/state_machine_helper.html#Helper.path_planning"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utilities.exprob_surveillance.state_machine_helper.Helper.path_planning" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="utilities.exprob_robot_patrolling.state_machine_helper.Helper.path_planning">
+<span class="sig-name descname"><span class="pre">path_planning</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">listNow</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">listDes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">robPos</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utilities/exprob_robot_patrolling/state_machine_helper.html#Helper.path_planning"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utilities.exprob_robot_patrolling.state_machine_helper.Helper.path_planning" title="Permalink to this definition"></a></dt>
 <dd><p>This method is needed to plan the path from one position to another, recursively scanning the list of reachable point for the robot
 and the connected area to the desired position.</p>
 <dl class="simple">
@@ -441,8 +760,8 @@ robPos: the actual robot position in the moment the function is called for check
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="utilities.exprob_surveillance.state_machine_helper.Helper.robot_location">
-<span class="sig-name descname"><span class="pre">robot_location</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">isInList</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utilities/exprob_surveillance/state_machine_helper.html#Helper.robot_location"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utilities.exprob_surveillance.state_machine_helper.Helper.robot_location" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="utilities.exprob_robot_patrolling.state_machine_helper.Helper.robot_location">
+<span class="sig-name descname"><span class="pre">robot_location</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">isInList</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utilities/exprob_robot_patrolling/state_machine_helper.html#Helper.robot_location"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utilities.exprob_robot_patrolling.state_machine_helper.Helper.robot_location" title="Permalink to this definition"></a></dt>
 <dd><p>Method to extract the element of the queried <code class="docutils literal notranslate"><span class="pre">isIn</span></code> robot’s object property.</p>
 <dl class="simple">
 <dt>Args</dt><dd><p>self: instance of the current class
@@ -452,8 +771,17 @@ isInList: queried objects section of the Armor service message</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="utilities.exprob_surveillance.state_machine_helper.Helper.rooms_search">
-<span class="sig-name descname"><span class="pre">rooms_search</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">roomList</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utilities/exprob_surveillance/state_machine_helper.html#Helper.rooms_search"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utilities.exprob_surveillance.state_machine_helper.Helper.rooms_search" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="utilities.exprob_robot_patrolling.state_machine_helper.Helper.room_dictionary">
+<span class="sig-name descname"><span class="pre">room_dictionary</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/utilities/exprob_robot_patrolling/state_machine_helper.html#Helper.room_dictionary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utilities.exprob_robot_patrolling.state_machine_helper.Helper.room_dictionary" title="Permalink to this definition"></a></dt>
+<dd><p>Method that initializes the global variable <code class="docutils literal notranslate"><span class="pre">coordinates</span></code> as a dictionary containing
+the X and Y coordinates for each room in the list <code class="docutils literal notranslate"><span class="pre">rooms</span></code>. The function does this by calling
+the ArmorClient and using the <code class="docutils literal notranslate"><span class="pre">QUERY</span></code> command to retrieve the X and Y coordinates for each room
+from the ontology. The function then adds the room’s X and Y coordinates to the coordinates dictionary.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="utilities.exprob_robot_patrolling.state_machine_helper.Helper.rooms_search">
+<span class="sig-name descname"><span class="pre">rooms_search</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">roomList</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utilities/exprob_robot_patrolling/state_machine_helper.html#Helper.rooms_search"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utilities.exprob_robot_patrolling.state_machine_helper.Helper.rooms_search" title="Permalink to this definition"></a></dt>
 <dd><p>Method to rewrite the queried data property list of the room, saving in the returned list as separate strings</p>
 <dl class="simple">
 <dt>Args</dt><dd><p>self: instance of the current class
@@ -465,8 +793,8 @@ roomList: queried objects section of the Armor service message</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="utilities.exprob_surveillance.state_machine_helper.Helper.set_urgency">
-<span class="sig-name descname"><span class="pre">set_urgency</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/utilities/exprob_surveillance/state_machine_helper.html#Helper.set_urgency"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utilities.exprob_surveillance.state_machine_helper.Helper.set_urgency" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="utilities.exprob_robot_patrolling.state_machine_helper.Helper.set_urgency">
+<span class="sig-name descname"><span class="pre">set_urgency</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/utilities/exprob_robot_patrolling/state_machine_helper.html#Helper.set_urgency"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utilities.exprob_robot_patrolling.state_machine_helper.Helper.set_urgency" title="Permalink to this definition"></a></dt>
 <dd><p>Method that set to <code class="docutils literal notranslate"><span class="pre">1</span></code> (True) the urgency flag if there are some rooms in the <code class="docutils literal notranslate"><span class="pre">urgency_rooms`'</span> <span class="pre">list,</span>
 <span class="pre">otherwise</span> <span class="pre">the</span> <span class="pre">flag</span> <span class="pre">will</span> <span class="pre">be</span> <span class="pre">set</span> <span class="pre">to</span> <span class="pre">``0</span></code>.</p>
 <dl class="simple">
@@ -478,8 +806,8 @@ roomList: queried objects section of the Armor service message</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="utilities.exprob_surveillance.state_machine_helper.Helper.time_set">
-<span class="sig-name descname"><span class="pre">time_set</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timeList</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utilities/exprob_surveillance/state_machine_helper.html#Helper.time_set"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utilities.exprob_surveillance.state_machine_helper.Helper.time_set" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="utilities.exprob_robot_patrolling.state_machine_helper.Helper.time_set">
+<span class="sig-name descname"><span class="pre">time_set</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timeList</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utilities/exprob_robot_patrolling/state_machine_helper.html#Helper.time_set"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utilities.exprob_robot_patrolling.state_machine_helper.Helper.time_set" title="Permalink to this definition"></a></dt>
 <dd><p>Method to rewrite the queried timestamp for both Rooms and Robot’s data property.</p>
 <dl class="simple">
 <dt>Args</dt><dd><p>self: instance of the current class
@@ -491,8 +819,8 @@ time_list: queried objects section of the Armor service message</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="utilities.exprob_surveillance.state_machine_helper.Helper.urgency">
-<span class="sig-name descname"><span class="pre">urgency</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/utilities/exprob_surveillance/state_machine_helper.html#Helper.urgency"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utilities.exprob_surveillance.state_machine_helper.Helper.urgency" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="utilities.exprob_robot_patrolling.state_machine_helper.Helper.urgency">
+<span class="sig-name descname"><span class="pre">urgency</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/utilities/exprob_robot_patrolling/state_machine_helper.html#Helper.urgency"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utilities.exprob_robot_patrolling.state_machine_helper.Helper.urgency" title="Permalink to this definition"></a></dt>
 <dd><p>Method that recursively checks on the <code class="docutils literal notranslate"><span class="pre">urgent_rooms</span></code> list if there are some <code class="docutils literal notranslate"><span class="pre">URGENT</span></code> rooms.
 If the list is empty the flag <code class="docutils literal notranslate"><span class="pre">urgency_status</span></code> is set to <code class="docutils literal notranslate"><span class="pre">0</span></code> (False), otherwise if there are some urgent rooms the flag will be set to <code class="docutils literal notranslate"><span class="pre">1</span></code>.</p>
 <dl class="simple">
@@ -504,8 +832,8 @@ If the list is empty the flag <code class="docutils literal notranslate"><span c
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="utilities.exprob_surveillance.state_machine_helper.Helper.world_callback">
-<span class="sig-name descname"><span class="pre">world_callback</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utilities/exprob_surveillance/state_machine_helper.html#Helper.world_callback"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utilities.exprob_surveillance.state_machine_helper.Helper.world_callback" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="utilities.exprob_robot_patrolling.state_machine_helper.Helper.world_callback">
+<span class="sig-name descname"><span class="pre">world_callback</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utilities/exprob_robot_patrolling/state_machine_helper.html#Helper.world_callback"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utilities.exprob_robot_patrolling.state_machine_helper.Helper.world_callback" title="Permalink to this definition"></a></dt>
 <dd><p>Callback function for the map publisher <code class="docutils literal notranslate"><span class="pre">/world_loading</span></code>, that modifies the value of the global variable <code class="docutils literal notranslate"><span class="pre">world_loaded</span></code> and will let the code start.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>

@@ -354,7 +354,7 @@
         <hasDoor rdf:resource="http://bnc/exp-rob-lab/2022-23#D1"/>
         <X_point rdf:datatype="http://www.w3.org/2001/XMLSchema#float">-7.0</X_point>
         <Y_point rdf:datatype="http://www.w3.org/2001/XMLSchema#float">3.0</Y_point>
-        <visitedAt rdf:datatype="http://www.w3.org/2001/XMLSchema#long">1687499653</visitedAt>
+        <visitedAt rdf:datatype="http://www.w3.org/2001/XMLSchema#long">1687692378</visitedAt>
     </owl:NamedIndividual>
     
 
@@ -366,7 +366,7 @@
         <hasDoor rdf:resource="http://bnc/exp-rob-lab/2022-23#D2"/>
         <X_point rdf:datatype="http://www.w3.org/2001/XMLSchema#float">-7.0</X_point>
         <Y_point rdf:datatype="http://www.w3.org/2001/XMLSchema#float">-4.0</Y_point>
-        <visitedAt rdf:datatype="http://www.w3.org/2001/XMLSchema#long">1687499641</visitedAt>
+        <visitedAt rdf:datatype="http://www.w3.org/2001/XMLSchema#long">1687692388</visitedAt>
     </owl:NamedIndividual>
     
 
@@ -378,7 +378,7 @@
         <hasDoor rdf:resource="http://bnc/exp-rob-lab/2022-23#D3"/>
         <X_point rdf:datatype="http://www.w3.org/2001/XMLSchema#float">9.0</X_point>
         <Y_point rdf:datatype="http://www.w3.org/2001/XMLSchema#float">3.0</Y_point>
-        <visitedAt rdf:datatype="http://www.w3.org/2001/XMLSchema#long">1687499642</visitedAt>
+        <visitedAt rdf:datatype="http://www.w3.org/2001/XMLSchema#long">1687692384</visitedAt>
     </owl:NamedIndividual>
     
 
@@ -390,7 +390,7 @@
         <hasDoor rdf:resource="http://bnc/exp-rob-lab/2022-23#D4"/>
         <X_point rdf:datatype="http://www.w3.org/2001/XMLSchema#float">9.0</X_point>
         <Y_point rdf:datatype="http://www.w3.org/2001/XMLSchema#float">-4.0</Y_point>
-        <visitedAt rdf:datatype="http://www.w3.org/2001/XMLSchema#long">1687499643</visitedAt>
+        <visitedAt rdf:datatype="http://www.w3.org/2001/XMLSchema#long">1687692382</visitedAt>
     </owl:NamedIndividual>
     
 
@@ -400,7 +400,7 @@
 
     <owl:NamedIndividual rdf:about="http://bnc/exp-rob-lab/2022-23#Robot1">
         <isIn rdf:resource="http://bnc/exp-rob-lab/2022-23#E"/>
-        <now rdf:datatype="http://www.w3.org/2001/XMLSchema#long">1687499656</now>
+        <now rdf:datatype="http://www.w3.org/2001/XMLSchema#long">1687692401</now>
         <urgencyThreshold rdf:datatype="http://www.w3.org/2001/XMLSchema#long">7</urgencyThreshold>
     </owl:NamedIndividual>
     

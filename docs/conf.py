@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.abspath('..'))
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'Experimental Robotics Laboratory Assignment 1: robot surveillance'
+project = 'Experimental Robotics Laboratory Assignment 2: robot patrolling'
 copyright = '2023, Thomas Campagnolo'
 author = 'Thomas Campagnolo'
 release = '1.0'
@@ -38,6 +38,7 @@ templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 
+
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
@@ -47,3 +48,4 @@ master_doc = 'index'
 html_theme = 'sphinx_rtd_theme'
 
 html_static_path = ['_static']
+

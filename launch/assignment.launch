@@ -1,18 +1,18 @@
 <?xml version="1.0"?>
 <launch>
 
-  <!-- NEW -->
+  <!-- Robot model passes to rviz for visualization -->
   <arg name="visualize" default="true" />
   <arg name="model" default="$(find exprob_robot_patrolling)/urdf/robot_patrolling_explorer.xacro"/>
 
-   <!-- NEW -->
+  <!-- Param of the robot xacro -->
   <param name="robot_description" command="$(find xacro)/xacro --inorder $(arg model)" />
 
-
+  <!-- Robot simulation for rviz configuration -->
   <arg name="rvizconfig" default="$(find exprob_robot_patrolling)/config/sim_robot.rviz" />
 
 
-	  <!-- these are the arguments you can pass this launch file, for example paused:=true -->
+	<!-- these are the arguments you can pass this launch file, for example paused:=true -->
   <arg name="paused" default="false"/>
   <arg name="use_sim_time" default="true"/>
   <arg name="extra_gazebo_args" default=""/>
@@ -67,12 +67,12 @@
   </node>
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true" />
 
-  <!-- Run a python script to the send a service call to gazebo_ros to spawn a URDF robot -->
+  <!-- Run a python script to the send a service call to gazebo_ros to spawn a URDF robot to the desired starting position -->
   <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
 	args="-urdf -model robot_patrolling_explorer -param robot_description -x -6.0 -y 11.0 -z 0.05"/>
 
+  <!-- Differential controller and joint controllers for the robot model -->
   <rosparam file="$(find exprob_robot_patrolling)/config/differential_controller.yaml" command="load" ns="/robot_patrolling_explorer" />
- 
   <node name="controller_spawner" pkg="controller_manager" type="spawner" output="screen" args = "--namespace=/robot_patrolling_explorer
       joint_state_controller
       joint1_position_controller
@@ -81,6 +81,7 @@
       --shutdown-timeout 3">
   </node>
 
+  <!-- SLAM-Gmapping settings -->
   <param name="use_sim_time" value="true"/>
   <node pkg="gmapping" type="slam_gmapping" name="slam_gmapping" output="screen">
     <param name="base_frame" value="base_footprint"/>
@@ -115,6 +116,7 @@
     <param name="transform_publish_period" value="0.0005"/>
   </node>
   
+  <!-- Motion planning -->
   <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
     <rosparam file="$(find exprob_robot_patrolling)/config/costmap_common_params.yaml" command="load" ns="global_costmap"/>
     <rosparam file="$(find exprob_robot_patrolling)/config/costmap_common_params.yaml" command="load" ns="local_costmap"/>
@@ -124,12 +126,10 @@
     <rosparam file="$(find exprob_robot_patrolling)/config/move_base_params.yaml" command="load"/>
   </node>
 
-
+  <!-- start marker server and marker publisher-->
   <node name="marker_server" pkg="exprob_robot_patrolling" type="marker_server" />
   <remap from="/image" to="/robot_patrolling_explorer/camera1/image_raw" />
   <node name="marker_publisher" pkg="aruco_ros"  type="marker_publisher" launch-prefix="xterm -e" />
-  <node pkg = "exprob_robot_patrolling" type = "robot_motion.py" name = "robot_motion"> </node>
 
-
-
+  <!--<node pkg = "exprob_robot_patrolling" type = "robot_motion.py" name = "robot_motion"> </node>-->
 </launch>

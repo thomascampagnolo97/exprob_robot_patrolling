@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>utilities.exprob_robot_patrolling.state_machine_helper &mdash; Experimental Robotics Laboratory Assignment 2: robot patrolling 1.0 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/graphviz.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> Experimental Robotics Laboratory Assignment 2: robot patrolling
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Experimental Robotics Laboratory Assignment 2: robot patrolling</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      <li>utilities.exprob_robot_patrolling.state_machine_helper</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for utilities.exprob_robot_patrolling.state_machine_helper</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">.. module:: state_machine_helper</span>
+<span class="sd">    :platform: Unix</span>
+<span class="sd">	:synopsis: Python module for the Helper of the State Machine</span>
+<span class="sd">   </span>
+<span class="sd">.. moduleauthor:: Thomas Campagnolo &lt;s5343274@studenti.unige.it&gt;</span>
+
+<span class="sd">ROS node in support of the main node :mod:`fsm_behaviour`. The software architecture allows initializing a </span>
+<span class="sd">helper class for the Final State Machine which controls the behavior of a surveillance robot. </span>
+<span class="sd">This node allows to have cleaner and more readable code in the ``fsm_behaviour.py`` node, in fact, every task</span>
+<span class="sd">called in the previously mentioned code is defined in the current code.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">rospkg</span>
+<span class="kn">import</span> <span class="nn">rospy</span>
+<span class="kn">import</span> <span class="nn">roslib</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">import</span> <span class="nn">smach</span>
+<span class="kn">import</span> <span class="nn">smach_ros</span>
+
+<span class="kn">from</span> <span class="nn">armor_api.armor_client</span> <span class="kn">import</span> <span class="n">ArmorClient</span>
+<span class="kn">from</span> <span class="nn">std_msgs.msg</span> <span class="kn">import</span> <span class="n">Bool</span>
+
+<span class="kn">from</span> <span class="nn">exprob_robot_patrolling.srv</span> <span class="kn">import</span> <span class="n">GetCoordinates</span>
+
+
+<div class="viewcode-block" id="Helper"><a class="viewcode-back" href="../../../index.html#utilities.exprob_robot_patrolling.state_machine_helper.Helper">[docs]</a><span class="k">class</span> <span class="nc">Helper</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class is created to decouple the implementation of the Finite State Machine, allowing to have a more readable and cleaner code in the ``fsm_behaviour.py`` node.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Function that initializes the class Helper.</span>
+<span class="sd">		</span>
+<span class="sd">		Args:</span>
+<span class="sd">			self: instance of the current class.</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Global variables and flags</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wait_time</span> <span class="o">=</span> <span class="mf">1.5</span>         <span class="c1"># Global variable for the sleeping time</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">battery_status</span> <span class="o">=</span> <span class="mi">1</span>      <span class="c1"># Battery flag, 1 means that it is fully charged</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">urgency_status</span> <span class="o">=</span> <span class="mi">0</span>      <span class="c1"># Flag to identify the urgent rooms</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">world_loaded</span> <span class="o">=</span> <span class="kc">False</span>    <span class="c1"># World flag, False when the map is not loaded, True when map is loaded correctly (pub in world_generator_node)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">shared_location</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>    <span class="c1"># List of the shared locations given by the connectedTo data property of the OWL</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">urgent_rooms</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>       <span class="c1"># List from the query of the individuals in the URGENT class</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">robot_position</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>     <span class="c1"># List that contains always one element, which is the robot position in that moment</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timestamp</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>          <span class="c1"># List of the queried timestamp</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">coordinates</span> <span class="o">=</span> <span class="p">{}</span>        <span class="c1"># Dictionary for the rooms coordinates</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">process_value</span> <span class="o">=</span> <span class="mi">0</span>
+
+
+<div class="viewcode-block" id="Helper.world_callback"><a class="viewcode-back" href="../../../index.html#utilities.exprob_robot_patrolling.state_machine_helper.Helper.world_callback">[docs]</a>    <span class="k">def</span> <span class="nf">world_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">        Callback function for the map publisher ``/world_loading``, that modifies the value of the global variable ``world_loaded`` and will let the code start.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">			self: instance of the current class</span>
+<span class="sd">            data: data in the topic ``/world_loading``</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">			self.world_loaded: Bool value that states the flag of the generation of the world</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1">#global world_loaded</span>
+        <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">data</span> <span class="o">==</span> <span class="kc">False</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">world_loaded</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">elif</span> <span class="n">data</span><span class="o">.</span><span class="n">data</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">world_loaded</span> <span class="o">=</span> <span class="kc">True</span>
+        
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">world_loaded</span></div>
+    
+<div class="viewcode-block" id="Helper.battery_callback"><a class="viewcode-back" href="../../../index.html#utilities.exprob_robot_patrolling.state_machine_helper.Helper.battery_callback">[docs]</a>    <span class="k">def</span> <span class="nf">battery_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">        Callback function for the map publisher ``/battery_signal``, that modifies the value of the global variable ``battery_status`` and will let the code start.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">			self: instance of the current class</span>
+<span class="sd">            data: data in the topic ``/battery_signal``</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">			self.battery_status: Bool value that states the flag about the battery status</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">#global battery_status</span>
+        <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">data</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">battery_status</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">elif</span> <span class="n">data</span><span class="o">.</span><span class="n">data</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">battery_status</span> <span class="o">=</span> <span class="mi">1</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">battery_status</span></div>
+    
+<div class="viewcode-block" id="Helper.path_planning"><a class="viewcode-back" href="../../../index.html#utilities.exprob_robot_patrolling.state_machine_helper.Helper.path_planning">[docs]</a>    <span class="k">def</span> <span class="nf">path_planning</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">listNow</span><span class="p">,</span> <span class="n">listDes</span><span class="p">,</span> <span class="n">robPos</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method is needed to plan the path from one position to another, recursively scanning the list of reachable point for the robot </span>
+<span class="sd">        and the connected area to the desired position.</span>
+
+<span class="sd">        Args</span>
+<span class="sd">            self: instance of the current class</span>
+<span class="sd">            l1: the list of string from querying the *connectedTo* data property of the actual robot position</span>
+<span class="sd">            l2: the list of string from querying the *connectedTo* data property of the desired robot location</span>
+<span class="sd">            robPos: the actual robot position in the moment the function is called for checking operation</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">            self.shared_location: the shared location between the two lists</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1">#global shared_location</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">listNow</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">listDes</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="n">j</span> <span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">shared_location</span> <span class="o">=</span> <span class="n">i</span>
+                <span class="k">elif</span> <span class="n">robPos</span> <span class="o">==</span> <span class="n">j</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">shared_location</span> <span class="o">=</span> <span class="n">robPos</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">shared_location</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">shared_location</span></div>
+
+<div class="viewcode-block" id="Helper.time_set"><a class="viewcode-back" href="../../../index.html#utilities.exprob_robot_patrolling.state_machine_helper.Helper.time_set">[docs]</a>    <span class="k">def</span> <span class="nf">time_set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeList</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Method to rewrite the queried timestamp for both Rooms and Robot&#39;s data property.</span>
+
+<span class="sd">        Args</span>
+<span class="sd">            self: instance of the current class</span>
+<span class="sd">            time_list: queried objects section of the Armor service message</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">            self.timestamp: the integer value between the double quotes of the OWL, saved as list of string</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timestamp</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">timeList</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">11</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">timestamp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">timestamp</span><span class="o">+</span><span class="n">i</span><span class="p">[</span><span class="n">element</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">timestamp</span></div>
+
+<div class="viewcode-block" id="Helper.rooms_search"><a class="viewcode-back" href="../../../index.html#utilities.exprob_robot_patrolling.state_machine_helper.Helper.rooms_search">[docs]</a>    <span class="k">def</span> <span class="nf">rooms_search</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">roomList</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Method to rewrite the queried data property list of the room, saving in the returned list as separate strings</span>
+
+<span class="sd">        Args</span>
+<span class="sd">            self: instance of the current class</span>
+<span class="sd">            roomList: queried objects section of the Armor service message</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">            self.location_list: the list of strings of locations</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">location_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">roomList</span><span class="p">:</span>
+            
+            <span class="k">if</span> <span class="s2">&quot;R1&quot;</span> <span class="ow">in</span> <span class="n">i</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">location_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;R1&#39;</span><span class="p">)</span> <span class="c1"># room 1</span>
+            <span class="k">elif</span> <span class="s2">&quot;R2&quot;</span> <span class="ow">in</span> <span class="n">i</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">location_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;R2&#39;</span><span class="p">)</span> <span class="c1"># room 2</span>
+            <span class="k">elif</span> <span class="s2">&quot;R3&quot;</span> <span class="ow">in</span> <span class="n">i</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">location_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;R3&#39;</span><span class="p">)</span> <span class="c1"># room 3</span>
+            <span class="k">elif</span> <span class="s2">&quot;R4&quot;</span> <span class="ow">in</span> <span class="n">i</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">location_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;R4&#39;</span><span class="p">)</span> <span class="c1"># room 4</span>
+            <span class="k">elif</span> <span class="s2">&quot;C1&quot;</span> <span class="ow">in</span> <span class="n">i</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">location_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;C1&#39;</span><span class="p">)</span> <span class="c1"># corridor 1</span>
+            <span class="k">elif</span> <span class="s2">&quot;C2&quot;</span> <span class="ow">in</span> <span class="n">i</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">location_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;C2&#39;</span><span class="p">)</span> <span class="c1"># corridor 2</span>
+            <span class="k">elif</span> <span class="s2">&quot;E&quot;</span> <span class="ow">in</span> <span class="n">i</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">location_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;E&#39;</span><span class="p">)</span> <span class="c1"># special room for recharging</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">location_list</span></div>
+
+<div class="viewcode-block" id="Helper.robot_location"><a class="viewcode-back" href="../../../index.html#utilities.exprob_robot_patrolling.state_machine_helper.Helper.robot_location">[docs]</a>    <span class="k">def</span> <span class="nf">robot_location</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">isInList</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Method to extract the element of the queried ``isIn`` robot&#39;s object property.</span>
+
+<span class="sd">        Args</span>
+<span class="sd">            self: instance of the current class</span>
+<span class="sd">            isInList: queried objects section of the Armor service message</span>
+<span class="sd">                    </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">isInList</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s2">&quot;R1&quot;</span> <span class="ow">in</span> <span class="n">i</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s1">&#39;R1&#39;</span>
+            <span class="k">elif</span> <span class="s2">&quot;R2&quot;</span> <span class="ow">in</span> <span class="n">i</span><span class="p">:</span>
+                <span class="k">return</span><span class="s1">&#39;R2&#39;</span>
+            <span class="k">elif</span> <span class="s2">&quot;R3&quot;</span> <span class="ow">in</span> <span class="n">i</span><span class="p">:</span>
+                <span class="k">return</span><span class="s1">&#39;R3&#39;</span>
+            <span class="k">elif</span> <span class="s2">&quot;R4&quot;</span> <span class="ow">in</span> <span class="n">i</span><span class="p">:</span>
+                <span class="k">return</span><span class="s1">&#39;R4&#39;</span>
+            <span class="k">elif</span> <span class="s2">&quot;C1&quot;</span> <span class="ow">in</span> <span class="n">i</span><span class="p">:</span>
+                <span class="k">return</span><span class="s1">&#39;C1&#39;</span>
+            <span class="k">elif</span> <span class="s2">&quot;C2&quot;</span> <span class="ow">in</span> <span class="n">i</span><span class="p">:</span>
+                <span class="k">return</span><span class="s1">&#39;C2&#39;</span>
+            <span class="k">elif</span> <span class="s2">&quot;E&quot;</span> <span class="ow">in</span> <span class="n">i</span><span class="p">:</span>
+                <span class="k">return</span><span class="s1">&#39;E&#39;</span></div>
+            
+<div class="viewcode-block" id="Helper.set_urgency"><a class="viewcode-back" href="../../../index.html#utilities.exprob_robot_patrolling.state_machine_helper.Helper.set_urgency">[docs]</a>    <span class="k">def</span> <span class="nf">set_urgency</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Method that set to ``1`` (True) the urgency flag if there are some rooms in the ``urgency_rooms`&#39; list,</span>
+<span class="sd">        otherwise the flag will be set to ``0``.</span>
+
+<span class="sd">        Args</span>
+<span class="sd">            self: instance of the current class</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">            self.urgency_status: Bool value that states the flag about the urgency status</span>
+<span class="sd">            </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">urgent_rooms</span> <span class="o">==</span> <span class="p">[]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">urgency_status</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">urgency_status</span> <span class="o">=</span> <span class="mi">1</span>
+        
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">urgency_status</span></div>
+
+<div class="viewcode-block" id="Helper.urgency"><a class="viewcode-back" href="../../../index.html#utilities.exprob_robot_patrolling.state_machine_helper.Helper.urgency">[docs]</a>    <span class="k">def</span> <span class="nf">urgency</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Method that recursively checks on the ``urgent_rooms`` list if there are some ``URGENT`` rooms.</span>
+<span class="sd">        If the list is empty the flag ``urgency_status`` is set to ``0`` (False), otherwise if there are some urgent rooms the flag will be set to ``1``.</span>
+
+<span class="sd">        Args</span>
+<span class="sd">            self: instance of the current class</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">            self.urgent_rooms: list of the urgent rooms, modified in the :mod:`Surveillance` status.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1">#global urgency_status</span>
+        <span class="c1">#global urgent_rooms</span>
+
+        <span class="n">client</span> <span class="o">=</span> <span class="n">ArmorClient</span><span class="p">(</span><span class="s2">&quot;example&quot;</span><span class="p">,</span> <span class="s2">&quot;ontoRef&quot;</span><span class="p">)</span>
+        <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REASON&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,[</span><span class="s1">&#39;&#39;</span><span class="p">])</span>
+        
+        <span class="c1"># query the ontology to check if there are some URGENT instances</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">query_urgent</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;QUERY&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,</span><span class="s1">&#39;CLASS&#39;</span><span class="p">,[</span><span class="s1">&#39;URGENT&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">urgent_rooms</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rooms_search</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">query_urgent</span><span class="o">.</span><span class="n">queried_objects</span><span class="p">)</span> 
+        <span class="n">random</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">urgent_rooms</span><span class="p">)</span>
+
+        <span class="c1"># set the urgency flag</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_urgency</span><span class="p">()</span>
+            
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">urgent_rooms</span></div>
+
+<div class="viewcode-block" id="Helper.go_to_coordinate"><a class="viewcode-back" href="../../../index.html#utilities.exprob_robot_patrolling.state_machine_helper.Helper.go_to_coordinate">[docs]</a>    <span class="k">def</span> <span class="nf">go_to_coordinate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coor</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Method that moves the robot to the specified coordinates by calling the ``/get_coordinate`` service. If the service </span>
+<span class="sd">        returns that the target coordinates have been reached, the function returns ``1``. If the target coordinates have not </span>
+<span class="sd">        been reached, the function calls itself again to try moving to the target coordinates again.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            - coor: A string representing the key for the desired coordinates in the global dictionary coordinates.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            - response.return: An integer indicating whether the target coordinates have been reached ``1`` or not ``0``.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">rospy</span><span class="o">.</span><span class="n">wait_for_service</span><span class="p">(</span><span class="s1">&#39;/get_coordinate&#39;</span><span class="p">)</span>
+        <span class="n">get_coordinate</span> <span class="o">=</span> <span class="n">rospy</span><span class="o">.</span><span class="n">ServiceProxy</span><span class="p">(</span><span class="s1">&#39;/get_coordinate&#39;</span><span class="p">,</span> <span class="n">GetCoordinates</span><span class="p">)</span>
+
+        <span class="n">response</span> <span class="o">=</span> <span class="n">get_coordinate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">coordinates</span><span class="p">[</span><span class="n">coor</span><span class="p">][</span><span class="s1">&#39;X&#39;</span><span class="p">]</span> <span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">coordinates</span><span class="p">[</span><span class="n">coor</span><span class="p">][</span><span class="s1">&#39;Y&#39;</span><span class="p">])</span>
+        <span class="c1"># print(response)</span>
+        <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">return_</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Location successfully reached!&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Attention, location not reached!&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">go_to_coordinate</span><span class="p">(</span><span class="n">coor</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">return_</span></div>
+    
+<div class="viewcode-block" id="Helper.room_dictionary"><a class="viewcode-back" href="../../../index.html#utilities.exprob_robot_patrolling.state_machine_helper.Helper.room_dictionary">[docs]</a>    <span class="k">def</span> <span class="nf">room_dictionary</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Method that initializes the global variable ``coordinates`` as a dictionary containing </span>
+<span class="sd">        the X and Y coordinates for each room in the list ``rooms``. The function does this by calling </span>
+<span class="sd">        the ArmorClient and using the ``QUERY`` command to retrieve the X and Y coordinates for each room </span>
+<span class="sd">        from the ontology. The function then adds the room&#39;s X and Y coordinates to the coordinates dictionary.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">client</span> <span class="o">=</span> <span class="n">ArmorClient</span><span class="p">(</span><span class="s2">&quot;example&quot;</span><span class="p">,</span> <span class="s2">&quot;ontoRef&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">rooms</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;R1&#39;</span><span class="p">,</span> <span class="s1">&#39;R2&#39;</span><span class="p">,</span> <span class="s1">&#39;R3&#39;</span><span class="p">,</span> <span class="s1">&#39;R4&#39;</span><span class="p">,</span> <span class="s1">&#39;C1&#39;</span><span class="p">,</span> <span class="s1">&#39;C2&#39;</span><span class="p">,</span> <span class="s1">&#39;E&#39;</span><span class="p">]</span>
+        
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rooms</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">req</span><span class="o">=</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;QUERY&#39;</span><span class="p">,</span><span class="s1">&#39;DATAPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;X_point&#39;</span><span class="p">,</span> <span class="n">i</span><span class="p">])</span>
+            <span class="n">X</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">extract_value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">req</span><span class="o">.</span><span class="n">queried_objects</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">req</span><span class="o">=</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;QUERY&#39;</span><span class="p">,</span><span class="s1">&#39;DATAPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;Y_point&#39;</span><span class="p">,</span> <span class="n">i</span><span class="p">])</span>
+            <span class="n">Y</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">extract_value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">req</span><span class="o">.</span><span class="n">queried_objects</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">coordinates</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;X&#39;</span><span class="p">:</span> <span class="n">X</span><span class="p">,</span> <span class="s1">&#39;Y&#39;</span><span class="p">:</span> <span class="n">Y</span><span class="p">}</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">coordinates</span></div>
+
+<div class="viewcode-block" id="Helper.extract_value"><a class="viewcode-back" href="../../../index.html#utilities.exprob_robot_patrolling.state_machine_helper.Helper.extract_value">[docs]</a>    <span class="k">def</span> <span class="nf">extract_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_list</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Method to rewrite the queried time stamp or coordinate, deleting the not digit part of the string, for both Rooms and Robot&#39;s data property</span>
+
+<span class="sd">        Args</span>
+<span class="sd">            - input_list: list of queried objects section of the Armor service message</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">            all the element between the double quotes</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Extract the string value from the list</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value_string</span> <span class="o">=</span> <span class="n">input_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="c1"># Remove the surrounding quotation marks and the xsd:float type indicator</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stripped_string</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">value_string</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;^^&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="c1"># Remove any surrounding quotation marks</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stripped_string</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stripped_string</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">)</span>
+        <span class="c1"># Convert the string to a float and return it</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stripped_string</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Helper.common_connection"><a class="viewcode-back" href="../../../index.html#utilities.exprob_robot_patrolling.state_machine_helper.Helper.common_connection">[docs]</a>    <span class="k">def</span> <span class="nf">common_connection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">list1</span><span class="p">,</span> <span class="n">list2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Method that returns the common value between the two lists.</span>
+
+<span class="sd">        Args</span>
+<span class="sd">            - list1: list 1 of rooms </span>
+<span class="sd">            - list2: list 2 of rooms</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">            The common value (common room between the two lists)</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">for</span> <span class="bp">self</span><span class="o">.</span><span class="n">string</span> <span class="ow">in</span> <span class="n">list1</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">string</span> <span class="ow">in</span> <span class="n">list2</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">string</span></div>
+
+<div class="viewcode-block" id="Helper.motion_control"><a class="viewcode-back" href="../../../index.html#utilities.exprob_robot_patrolling.state_machine_helper.Helper.motion_control">[docs]</a>    <span class="k">def</span> <span class="nf">motion_control</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">desPos</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Method used when the Robot has to change its position in the environment.</span>
+<span class="sd">        </span>
+<span class="sd">        This is the main function that define the motion of the robot in the map and takes the help of other functions:</span>
+<span class="sd">            - ``rooms_search``; </span>
+<span class="sd">            - ``common_connection``;</span>
+<span class="sd">            - ``robot_location``;</span>
+<span class="sd">            - ``go_to_coordinate``;</span>
+<span class="sd">            - ``time_set``.</span>
+
+<span class="sd">        Args</span>
+<span class="sd">            self: instance of the current class</span>
+<span class="sd">            desPos: is the desired robot position</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">            robot_position: the updated robot position at the end of the movement, when the location is changed</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="c1"># client commands of the armor_api</span>
+        <span class="n">client</span> <span class="o">=</span> <span class="n">ArmorClient</span><span class="p">(</span><span class="s2">&quot;example&quot;</span><span class="p">,</span> <span class="s2">&quot;ontoRef&quot;</span><span class="p">)</span>
+        <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REASON&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,[</span><span class="s1">&#39;&#39;</span><span class="p">])</span>
+        
+        <span class="c1"># query the ontology about the position of the robot in the environment and extract the information with the function robot_location</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">query_position</span><span class="o">=</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;QUERY&#39;</span><span class="p">,</span><span class="s1">&#39;OBJECTPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;isIn&#39;</span><span class="p">,</span><span class="s1">&#39;Robot1&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">robot_position</span><span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot_location</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">query_position</span><span class="o">.</span><span class="n">queried_objects</span><span class="p">)</span>
+        
+        <span class="c1"># For debugging uncomment those lines</span>
+        <span class="c1">#print(&#39;Robot position: &#39;, self.robot_position) </span>
+        <span class="c1">#print(&#39;The robot changes position from: &#39;, self.robot_position, &#39;to: &#39;, desPos)</span>
+
+        <span class="c1"># query the ontology about the robot&#39;s object property `canReach`</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">query_reach_loc</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;QUERY&#39;</span><span class="p">,</span><span class="s1">&#39;OBJECTPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;canReach&#39;</span><span class="p">,</span> <span class="s1">&#39;Robot1&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">robot_can_reach</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rooms_search</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">query_reach_loc</span><span class="o">.</span><span class="n">queried_objects</span><span class="p">)</span>
+
+        <span class="c1"># For debugging uncomment this line</span>
+        <span class="c1">#print(&#39;The locations that the robot can reach are: &#39;, self.robot_can_reach) </span>
+
+
+        <span class="k">if</span> <span class="n">desPos</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot_can_reach</span><span class="p">:</span>
+            <span class="c1">#print(&#39;Robot can reach the desired position!&#39;)</span>
+            <span class="c1"># Update isIn property of the robot position</span>
+            <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REPLACE&#39;</span><span class="p">,</span><span class="s1">&#39;OBJECTPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;isIn&#39;</span><span class="p">,</span> <span class="s1">&#39;Robot1&#39;</span><span class="p">,</span> <span class="n">desPos</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot_position</span><span class="p">])</span>
+            <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REASON&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,[</span><span class="s1">&#39;&#39;</span><span class="p">])</span>
+            
+            <span class="c1"># Update the timing information of the robot&#39;s data property `now`</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rob_time</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;QUERY&#39;</span><span class="p">,</span><span class="s1">&#39;DATAPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;now&#39;</span><span class="p">,</span> <span class="s1">&#39;Robot1&#39;</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">old_rob_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rob_time</span><span class="o">.</span><span class="n">queried_objects</span><span class="p">)</span>
+            <span class="c1"># compute the current time</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">current_time</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()))</span>
+            <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REPLACE&#39;</span><span class="p">,</span><span class="s1">&#39;DATAPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;now&#39;</span><span class="p">,</span> <span class="s1">&#39;Robot1&#39;</span><span class="p">,</span> <span class="s1">&#39;Long&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_time</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">old_rob_time</span><span class="p">])</span>
+            <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REASON&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,[</span><span class="s1">&#39;&#39;</span><span class="p">])</span>
+            
+            <span class="c1"># query the subclasses of the locations (ROOM, URGENT, CORRIDOR) from the ontology</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">query_location</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;QUERY&#39;</span><span class="p">,</span><span class="s1">&#39;CLASS&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="n">desPos</span><span class="p">,</span> <span class="s1">&#39;true&#39;</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">subclass_location</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">query_location</span><span class="o">.</span><span class="n">queried_objects</span>
+
+            <span class="c1"># For debugging uncomment the line below</span>
+            <span class="c1">#print(&#39;The subclass of the location is: &#39;, subclass_location)</span>
+            
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">subclass_location</span> <span class="o">==</span> <span class="p">[</span><span class="s1">&#39;URGENT&#39;</span><span class="p">]</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">subclass_location</span> <span class="o">==</span> <span class="p">[</span><span class="s1">&#39;ROOM&#39;</span><span class="p">]:</span>
+                <span class="c1"># Update the timing information of the room&#39;s data property `visitedAt`</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">room_time</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;QUERY&#39;</span><span class="p">,</span><span class="s1">&#39;DATAPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;visitedAt&#39;</span><span class="p">,</span> <span class="n">desPos</span><span class="p">])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">old_room_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">room_time</span><span class="o">.</span><span class="n">queried_objects</span><span class="p">)</span>
+                <span class="c1"># compute the current time</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">current_time</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()))</span>
+                <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REPLACE&#39;</span><span class="p">,</span><span class="s1">&#39;DATAPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;visitedAt&#39;</span><span class="p">,</span> <span class="n">desPos</span><span class="p">,</span> <span class="s1">&#39;Long&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_time</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">old_room_time</span><span class="p">])</span>
+                <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REASON&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,[</span><span class="s1">&#39;&#39;</span><span class="p">])</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1">#print(&#39;Robot cannot reach the desired position!&#39;)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">query_desLoc_connection</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;QUERY&#39;</span><span class="p">,</span><span class="s1">&#39;OBJECTPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;connectedTo&#39;</span><span class="p">,</span> <span class="n">desPos</span><span class="p">])</span>
+            <span class="c1"># extract from the query the connected locations about the desired one</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">des_location_connected</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rooms_search</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">query_desLoc_connection</span><span class="o">.</span><span class="n">queried_objects</span><span class="p">)</span>
+            
+            <span class="c1"># For debugging uncomment the line below</span>
+            <span class="c1">#print(&#39;The desired location (desired robot position) is connected to: &#39;, self.location_connected)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">common</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">common_connection</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">des_location_connected</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot_can_reach</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">common</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># The are not common location between the connection of the actual robots location and the location connected to the desired one</span>
+                <span class="c1"># The robot cannot reach the desired position</span>
+                <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REPLACE&#39;</span><span class="p">,</span><span class="s1">&#39;OBJECTPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;isIn&#39;</span><span class="p">,</span> <span class="s1">&#39;Robot1&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot_can_reach</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot_position</span><span class="p">])</span>
+                <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REASON&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,[</span><span class="s1">&#39;&#39;</span><span class="p">])</span>
+
+                <span class="c1"># query the updated robots position in the environment and extract the information with the function robot_location</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">query_position</span><span class="o">=</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;QUERY&#39;</span><span class="p">,</span><span class="s1">&#39;OBJECTPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;isIn&#39;</span><span class="p">,</span><span class="s1">&#39;Robot1&#39;</span><span class="p">])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">robot_position</span><span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot_location</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">query_position</span><span class="o">.</span><span class="n">queried_objects</span><span class="p">)</span>
+
+                <span class="c1"># query the ontology about the updated robot&#39;s object property `canReach`</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">query_reach_loc</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;QUERY&#39;</span><span class="p">,</span><span class="s1">&#39;OBJECTPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;canReach&#39;</span><span class="p">,</span> <span class="s1">&#39;Robot1&#39;</span><span class="p">])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">robot_can_reach</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rooms_search</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">query_reach_loc</span><span class="o">.</span><span class="n">queried_objects</span><span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">common</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">common_connection</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">des_location_connected</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot_can_reach</span><span class="p">)</span>
+
+            <span class="c1"># updated the robots position in the environment with the common location</span>
+            <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REPLACE&#39;</span><span class="p">,</span><span class="s1">&#39;OBJECTPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;isIn&#39;</span><span class="p">,</span> <span class="s1">&#39;Robot1&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">common</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot_position</span><span class="p">])</span>
+            <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REASON&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,[</span><span class="s1">&#39;&#39;</span><span class="p">])</span>
+
+            <span class="c1"># query the updated robots position in the environment and extract the information with the function robot_location</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">query_position</span><span class="o">=</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;QUERY&#39;</span><span class="p">,</span><span class="s1">&#39;OBJECTPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;isIn&#39;</span><span class="p">,</span><span class="s1">&#39;Robot1&#39;</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">robot_position</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">robot_location</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">query_position</span><span class="o">.</span><span class="n">queried_objects</span><span class="p">)</span>
+
+            <span class="c1"># updated the robots position in the environment with the desired location</span>
+            <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REPLACE&#39;</span><span class="p">,</span><span class="s1">&#39;OBJECTPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;isIn&#39;</span><span class="p">,</span> <span class="s1">&#39;Robot1&#39;</span><span class="p">,</span> <span class="n">desPos</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot_position</span><span class="p">])</span>
+            <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REASON&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,[</span><span class="s1">&#39;&#39;</span><span class="p">])</span>
+
+
+
+            <span class="c1"># Update the timing information of the robot&#39;s data property `now`</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rob_time</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;QUERY&#39;</span><span class="p">,</span><span class="s1">&#39;DATAPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;now&#39;</span><span class="p">,</span> <span class="s1">&#39;Robot1&#39;</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">old_rob_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rob_time</span><span class="o">.</span><span class="n">queried_objects</span><span class="p">)</span>
+            <span class="c1"># compute the current time</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">current_time</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()))</span>
+            <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REPLACE&#39;</span><span class="p">,</span><span class="s1">&#39;DATAPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;now&#39;</span><span class="p">,</span> <span class="s1">&#39;Robot1&#39;</span><span class="p">,</span> <span class="s1">&#39;Long&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_time</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">old_rob_time</span><span class="p">])</span>
+            <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REASON&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,[</span><span class="s1">&#39;&#39;</span><span class="p">])</span>
+            
+            <span class="c1"># query the subclasses of the locations (ROOM, URGENT, CORRIDOR) from the ontology</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">query_locations</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;QUERY&#39;</span><span class="p">,</span><span class="s1">&#39;CLASS&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="n">desPos</span><span class="p">,</span> <span class="s1">&#39;true&#39;</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">subclass_location</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">query_locations</span><span class="o">.</span><span class="n">queried_objects</span>
+
+            <span class="c1"># For debugging uncomment the line below</span>
+            <span class="c1">#print(&#39;The subclass of the location is: &#39;, subclass_location)</span>
+            
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">subclass_location</span> <span class="o">==</span> <span class="p">[</span><span class="s1">&#39;URGENT&#39;</span><span class="p">]</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">subclass_location</span> <span class="o">==</span> <span class="p">[</span><span class="s1">&#39;ROOM&#39;</span><span class="p">]:</span>
+                <span class="c1"># Update the timing information of the room&#39;s data property `visitedAt`</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">room_time</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;QUERY&#39;</span><span class="p">,</span><span class="s1">&#39;DATAPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;visitedAt&#39;</span><span class="p">,</span> <span class="n">desPos</span><span class="p">])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">old_room_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">room_time</span><span class="o">.</span><span class="n">queried_objects</span><span class="p">)</span>
+                <span class="c1"># compute the current time</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">current_time</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()))</span>
+                <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REPLACE&#39;</span><span class="p">,</span><span class="s1">&#39;DATAPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;visitedAt&#39;</span><span class="p">,</span> <span class="n">desPos</span><span class="p">,</span> <span class="s1">&#39;Long&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_time</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">old_room_time</span><span class="p">])</span>
+                <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REASON&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,[</span><span class="s1">&#39;&#39;</span><span class="p">])</span>
+
+
+        <span class="c1"># query the updated robots position in the environment and extract the information with the function robot_location</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">query_position</span><span class="o">=</span><span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;QUERY&#39;</span><span class="p">,</span><span class="s1">&#39;OBJECTPROP&#39;</span><span class="p">,</span><span class="s1">&#39;IND&#39;</span><span class="p">,[</span><span class="s1">&#39;isIn&#39;</span><span class="p">,</span><span class="s1">&#39;Robot1&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">robot_position</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">robot_location</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">query_position</span><span class="o">.</span><span class="n">queried_objects</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">go_to_coordinate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">robot_position</span><span class="p">)</span>
+
+        <span class="c1"># For debugging uncomment the line below</span>
+        <span class="c1">#print(&#39;The robot is in: &#39;, self.robot_position)</span>
+
+        <span class="n">client</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;REASON&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">,[</span><span class="s1">&#39;&#39;</span><span class="p">])</span></div></div>
+
+        <span class="c1">#return self.robot_position</span>
+
+        
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Thomas Campagnolo.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

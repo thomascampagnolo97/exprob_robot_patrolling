@@ -171,6 +171,7 @@ catkin_install_python(
     scripts/battery.py
     scripts/joint_pose_controller.py
     scripts/robot_motion.py
+    scripts/room_scan.py
    DESTINATION 
     ${CATKIN_PACKAGE_BIN_DESTINATION}
 )

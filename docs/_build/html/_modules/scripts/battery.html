@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>scripts.battery &mdash; Experimental Robotics Laboratory Assignment: robot surveillance 1.0 documentation</title>
+  <title>scripts.battery &mdash; Experimental Robotics Laboratory Assignment 2: robot patrolling 1.0 documentation</title>
       <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/graphviz.css" type="text/css" />
@@ -27,7 +27,7 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="../../index.html" class="icon icon-home"> Experimental Robotics Laboratory Assignment: robot surveillance
+            <a href="../../index.html" class="icon icon-home"> Experimental Robotics Laboratory Assignment 2: robot patrolling
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
@@ -45,7 +45,7 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="../../index.html">Experimental Robotics Laboratory Assignment: robot surveillance</a>
+          <a href="../../index.html">Experimental Robotics Laboratory Assignment 2: robot patrolling</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -68,14 +68,15 @@
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">.. module:: battery</span>
 <span class="sd">    :platform: Unix</span>
-<span class="sd">    :synopsis: Python code to change the battery level</span>
+<span class="sd">    :synopsis: Python code that descrive the behaviour of the battery. DIscharge and recharge cycles.</span>
 
 <span class="sd">.. moduleauthor:: Thomas Campagnolo &lt;s5343274@studenti.unige.it&gt;</span>
 
 <span class="sd">ROS node which defines the behavior of the robot battery. This node simulate quite realistically the battery discharge </span>
 <span class="sd">and charge cycles with the use of a counter variable ``battery_level`` and the time parameters ``time_discharge`` and ``time_recharge``.</span>
-<span class="sd">If the battery is fully charged, the ``battery_status`` is published to ``1``. If instead the battery level is below the minimum threshold </span>
-<span class="sd">then ``battery_status`` is ``0``. Depending on this, the :mod:`fsm_behaviour` changes its execution between ``RECHARGING`` state and all the others states.</span>
+<span class="sd">If the battery is fully charged, the ``battery_status`` is published to ``1``. If instead the battery level is below the threshold </span>
+<span class="sd">then ``battery_status`` is ``0``, indicating that the battery is low on charge. For this reason, the :mod:`fsm_behaviour` changes its </span>
+<span class="sd">execution between all the others states to ``MOVE2RECHARGING`` and  ``RECHARGING`` states.</span>
 
 <span class="sd">Publishes to:</span>
 <span class="sd">    /battery_signal: a boolean flag to communicate when battery is low and when is totally charged</span>
@@ -83,64 +84,113 @@
 <span class="sd">Subscribes  to:</span>
 <span class="sd">    /world_battery_sync: a Boolean flag for synchronization reasons with the :mod:`fsm_behaviour` node. When the world is correctly loaded</span>
 <span class="sd">    the battery&#39;s functionality start its execution.</span>
+<span class="sd">    /start_recharging: a boolean flag used to indicate that the robot is in the recharging station and therefore the battery recharging cycle can begin.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span> <span class="nn">rospy</span>
+<span class="kn">import</span> <span class="nn">actionlib</span>
+<span class="kn">import</span> <span class="nn">random</span>
 <span class="kn">from</span> <span class="nn">std_msgs.msg</span> <span class="kn">import</span> <span class="n">Bool</span>
 
 <span class="kn">from</span> <span class="nn">armor_api.armor_client</span> <span class="kn">import</span> <span class="n">ArmorClient</span>
+<span class="kn">from</span> <span class="nn">move_base_msgs.msg</span> <span class="kn">import</span> <span class="n">MoveBaseAction</span><span class="p">,</span> <span class="n">MoveBaseGoal</span>
+<span class="kn">from</span> <span class="nn">std_msgs.msg</span> <span class="kn">import</span> <span class="n">Bool</span>
 
 <span class="c1"># Import constant name defined to structure the architecture</span>
-<span class="kn">from</span> <span class="nn">exprob_surveillance</span> <span class="kn">import</span> <span class="n">architecture_name_mapper</span> <span class="k">as</span> <span class="n">anm</span>
+<span class="kn">from</span> <span class="nn">exprob_robot_patrolling</span> <span class="kn">import</span> <span class="n">architecture_name_mapper</span> <span class="k">as</span> <span class="n">anm</span>
+
 
 <span class="c1"># Global parameters that define time informations</span>
-<span class="n">time_recharge</span> <span class="o">=</span> <span class="mf">0.7</span>     <span class="c1"># recharge time of a single step</span>
-<span class="n">time_discharge</span> <span class="o">=</span> <span class="mf">1.5</span>    <span class="c1"># discharge time of a single step</span>
+<span class="n">time_recharge</span> <span class="o">=</span> <span class="mf">0.1</span>     <span class="c1"># recharge time of a single step</span>
+<span class="n">time_discharge</span> <span class="o">=</span> <span class="mf">5.0</span>    <span class="c1"># discharge time of a single step (first cycle)</span>
 
-<span class="n">world_done</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># flag for sync with the world</span>
+<span class="n">sync_status</span> <span class="o">=</span> <span class="mi">0</span>     <span class="c1"># flag for sync with the world</span>
+<span class="n">sync_recharge</span> <span class="o">=</span> <span class="mi">0</span>   <span class="c1"># flag for sync with the correct robot position (the robot is in the recharging station, room E)</span>
 
 <span class="n">battery_level</span> <span class="o">=</span> <span class="n">anm</span><span class="o">.</span><span class="n">BATTERY_CAPACITY</span> <span class="c1"># initial and max battery capacity</span>
-<span class="n">threshold</span> <span class="o">=</span> <span class="mi">4</span>   <span class="c1"># minimum battery charge threshold</span>
+<span class="n">threshold</span> <span class="o">=</span> <span class="mi">30</span>   <span class="c1"># minimum battery charge threshold, notify the low battery level</span>
 
 
-<div class="viewcode-block" id="world_callback"><a class="viewcode-back" href="../../index.html#scripts.battery.world_callback">[docs]</a><span class="k">def</span> <span class="nf">world_callback</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+<div class="viewcode-block" id="sync_callback"><a class="viewcode-back" href="../../index.html#scripts.battery.sync_callback">[docs]</a><span class="k">def</span> <span class="nf">sync_callback</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; </span>
-<span class="sd">    Callback function for the fsm publisher ``/world_battery_sync``, that modifies the value of the global variable ``world_done`` and will let the code start. </span>
+<span class="sd">    Callback function for the fsm publisher ``/world_battery_sync``, that modifies the value of the global variable ``sync_status`` and will let the code start. </span>
 <span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">global</span> <span class="n">world_done</span>
+    <span class="k">global</span> <span class="n">sync_status</span>
 
     <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">data</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="n">world_done</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">sync_status</span> <span class="o">=</span> <span class="mi">0</span>
 
     <span class="k">elif</span> <span class="n">data</span><span class="o">.</span><span class="n">data</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="n">world_done</span> <span class="o">=</span> <span class="mi">1</span></div>
+        <span class="n">sync_status</span> <span class="o">=</span> <span class="mi">1</span></div>
 
 
-<div class="viewcode-block" id="battery_discharge"><a class="viewcode-back" href="../../index.html#scripts.battery.battery_discharge">[docs]</a><span class="k">def</span> <span class="nf">battery_discharge</span><span class="p">(</span><span class="n">level</span><span class="p">):</span>
+<div class="viewcode-block" id="recharge_callback"><a class="viewcode-back" href="../../index.html#scripts.battery.recharge_callback">[docs]</a><span class="k">def</span> <span class="nf">recharge_callback</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">    Callback function for the fsm publisher ``/start_recharging``, that modifies the value of the global variable ``sync_recharge`` </span>
+<span class="sd">    and will let the recharging cycle begins. </span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">global</span> <span class="n">sync_recharge</span>
+
+    <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">data</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">sync_recharge</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">elif</span> <span class="n">data</span><span class="o">.</span><span class="n">data</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">sync_recharge</span> <span class="o">=</span> <span class="mi">1</span></div>
+
+
+
+<div class="viewcode-block" id="battery_discharge"><a class="viewcode-back" href="../../index.html#scripts.battery.battery_discharge">[docs]</a><span class="k">def</span> <span class="nf">battery_discharge</span><span class="p">(</span><span class="n">set_flag</span><span class="p">,</span> <span class="n">level</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    This function defines the battery discharge cycle. Starting from the maximum capacity (``BATTERY_CAPACITY``), </span>
-<span class="sd">    the level is decreased in steps of 2 for each discharge time parameter.</span>
+<span class="sd">    This function defines the battery discharge cycle. In general, the execution start from the maximum capacity (``BATTERY_CAPACITY``). </span>
+<span class="sd">    The level is decreased in steps of 2 for each discharge time parameter.</span>
 <span class="sd">    If the level reaches values lower than or equal to the minimum charge ``threshold``, the ``battery_status`` is set to ``0``. </span>
-<span class="sd">    This indicates that the battery is low and must be recharged.</span>
+<span class="sd">    This indicates that the battery is low and the robot must move towards the charging station, room E.</span>
+<span class="sd">    While moving towards this position, the discharge cycle parameters are modified in order to continue the discharge of the </span>
+<span class="sd">    battery starting from the current charge level and the discharge time is longer to allow the robot to reach room E to recharge </span>
+<span class="sd">    the battery (behavior like energy saving).</span>
+<span class="sd">    If the synchronization flag with recharging ``sync_recharge`` is ``1`` this means that the robot has reached the recharging </span>
+<span class="sd">    station and therefore the discharge cycle is interrupted to allow the robot to recharge.</span>
+
 
 <span class="sd">    Args:</span>
-<span class="sd">        level: counter variable that simulates the dynamic level of the battery during the cycle</span>
+<span class="sd">        - set_flag: flag that sets the discharge mode, standard or energy saving</span>
+<span class="sd">        - level: counter variable that simulates the dynamic level of the battery during the cycle</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        battery_status: the battery flag</span>
+<span class="sd">        - battery_status: the battery flag</span>
+<span class="sd">        - level: actual battery level</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">for</span> <span class="n">level</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">anm</span><span class="o">.</span><span class="n">BATTERY_CAPACITY</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">):</span>
+    <span class="n">rospy</span><span class="o">.</span><span class="n">Subscriber</span><span class="p">(</span><span class="n">anm</span><span class="o">.</span><span class="n">TOPIC_START_CHARGE_BATTERY</span><span class="p">,</span> <span class="n">Bool</span><span class="p">,</span> <span class="n">recharge_callback</span><span class="p">)</span> 
+
+    <span class="c1"># General parameters for standard discharge cycle </span>
+    <span class="k">if</span> <span class="n">set_flag</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">actual_battery_level</span> <span class="o">=</span> <span class="n">anm</span><span class="o">.</span><span class="n">BATTERY_CAPACITY</span>
+        <span class="n">threshold</span> <span class="o">=</span> <span class="mi">30</span>
+        <span class="n">time_discharge</span> <span class="o">=</span> <span class="mf">5.0</span>
+    <span class="c1"># Energy saving parameters, the robot should reach the recharging station</span>
+    <span class="k">elif</span> <span class="n">set_flag</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">actual_battery_level</span> <span class="o">=</span> <span class="n">level</span>
+        <span class="n">threshold</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">time_discharge</span> <span class="o">=</span> <span class="mf">8.0</span>
+
+    <span class="k">for</span> <span class="n">level</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">actual_battery_level</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">):</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Battery level: &quot;</span><span class="p">,</span> <span class="n">level</span><span class="p">)</span>
 
         <span class="n">rospy</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">time_discharge</span><span class="p">)</span>
     
         <span class="k">if</span> <span class="n">level</span> <span class="o">&lt;=</span> <span class="n">threshold</span><span class="p">:</span>
             <span class="n">battery_status</span> <span class="o">=</span> <span class="mi">0</span>
-            <span class="k">return</span> <span class="n">battery_status</span></div>
+            <span class="k">return</span> <span class="n">battery_status</span><span class="p">,</span> <span class="n">level</span>
+        
+        <span class="k">if</span> <span class="n">sync_recharge</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">battery_status</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">return</span> <span class="n">battery_status</span><span class="p">,</span> <span class="n">level</span></div>
 
 
 <div class="viewcode-block" id="battery_recharge"><a class="viewcode-back" href="../../index.html#scripts.battery.battery_recharge">[docs]</a><span class="k">def</span> <span class="nf">battery_recharge</span><span class="p">(</span><span class="n">level</span><span class="p">):</span>
@@ -154,18 +204,31 @@
 <span class="sd">        level: counter variable that simulates the dynamic level of the battery during the cycle</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        battery_status: the battery flag</span>
+<span class="sd">        - battery_status: the battery flag</span>
+<span class="sd">        - level: actual battery level</span>
 <span class="sd">        </span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">for</span> <span class="n">level</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">threshold</span><span class="p">,</span> <span class="n">anm</span><span class="o">.</span><span class="n">BATTERY_CAPACITY</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">level</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="n">anm</span><span class="o">.</span><span class="n">BATTERY_CAPACITY</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">):</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Battery level recharged: &quot;</span><span class="p">,</span> <span class="n">level</span><span class="p">)</span>
         <span class="n">rospy</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">time_recharge</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">level</span> <span class="o">==</span> <span class="n">anm</span><span class="o">.</span><span class="n">BATTERY_CAPACITY</span><span class="p">:</span>
             <span class="n">battery_status</span> <span class="o">=</span> <span class="mi">1</span>
-            <span class="k">return</span> <span class="n">battery_status</span></div>
+            <span class="k">return</span> <span class="n">battery_status</span><span class="p">,</span> <span class="n">level</span></div>
 
+
+<div class="viewcode-block" id="reset_goal"><a class="viewcode-back" href="../../index.html#scripts.battery.reset_goal">[docs]</a><span class="k">def</span> <span class="nf">reset_goal</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function that cancels any existing goals using the Action client for the ``move_base`` action server</span>
+<span class="sd"> </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Action client</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">actionlib</span><span class="o">.</span><span class="n">SimpleActionClient</span><span class="p">(</span><span class="s1">&#39;move_base&#39;</span><span class="p">,</span> <span class="n">MoveBaseAction</span><span class="p">)</span>
+    <span class="c1"># Wait for the action server </span>
+    <span class="n">client</span><span class="o">.</span><span class="n">wait_for_server</span><span class="p">()</span>
+    <span class="n">client</span><span class="o">.</span><span class="n">cancel_all_goals</span><span class="p">()</span></div>
 
 
 <div class="viewcode-block" id="main_battery_behaviour"><a class="viewcode-back" href="../../index.html#scripts.battery.main_battery_behaviour">[docs]</a><span class="k">def</span> <span class="nf">main_battery_behaviour</span><span class="p">():</span>
@@ -179,21 +242,32 @@
 
     <span class="n">rospy</span><span class="o">.</span><span class="n">init_node</span><span class="p">(</span><span class="n">anm</span><span class="o">.</span><span class="n">NODE_ROBOT_BATTERY</span><span class="p">,</span> <span class="n">log_level</span><span class="o">=</span><span class="n">rospy</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
 
-    <span class="n">rospy</span><span class="o">.</span><span class="n">Subscriber</span><span class="p">(</span><span class="n">anm</span><span class="o">.</span><span class="n">TOPIC_SYNC_WORLD_BATTERY</span><span class="p">,</span> <span class="n">Bool</span><span class="p">,</span> <span class="n">world_callback</span><span class="p">)</span>    <span class="c1"># subscriber world flag for sync</span>
+    <span class="n">rospy</span><span class="o">.</span><span class="n">Subscriber</span><span class="p">(</span><span class="n">anm</span><span class="o">.</span><span class="n">TOPIC_SYNC_WORLD_BATTERY</span><span class="p">,</span> <span class="n">Bool</span><span class="p">,</span> <span class="n">sync_callback</span><span class="p">)</span>    <span class="c1"># subscriber world flag for sync</span>
     <span class="n">pub</span> <span class="o">=</span> <span class="n">rospy</span><span class="o">.</span><span class="n">Publisher</span><span class="p">(</span><span class="n">anm</span><span class="o">.</span><span class="n">TOPIC_BATTERY_SIGNAL</span><span class="p">,</span> <span class="n">Bool</span><span class="p">,</span> <span class="n">queue_size</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>    <span class="c1"># publisher of the battery status flag</span>
-    
+
+    <span class="n">rospy</span><span class="o">.</span><span class="n">Subscriber</span><span class="p">(</span><span class="n">anm</span><span class="o">.</span><span class="n">TOPIC_START_CHARGE_BATTERY</span><span class="p">,</span> <span class="n">Bool</span><span class="p">,</span> <span class="n">recharge_callback</span><span class="p">)</span>    <span class="c1"># subscriber world flag for sync</span>
+
+
     <span class="k">while</span> <span class="ow">not</span> <span class="n">rospy</span><span class="o">.</span><span class="n">is_shutdown</span><span class="p">():</span>
 
-        <span class="k">if</span> <span class="n">world_done</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">sync_status</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
             <span class="c1"># the world is loaded in the FSM, the battery behaviour starts its execution</span>
-            <span class="c1"># The battery charge is higher than the min threshold </span>
-            <span class="n">battery_status</span> <span class="o">=</span> <span class="n">battery_discharge</span><span class="p">(</span><span class="n">battery_level</span><span class="p">)</span>   <span class="c1"># discharge cycle</span>
-            <span class="n">pub</span><span class="o">.</span><span class="n">publish</span><span class="p">(</span><span class="n">battery_status</span><span class="p">)</span>
+            <span class="c1"># The battery charge is higher than the min threshold</span>
 
-            <span class="k">if</span> <span class="n">battery_status</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">set_discharge</span> <span class="o">=</span> <span class="mi">0</span> <span class="c1">#standard discharge cycle</span>
+            <span class="n">battery</span> <span class="o">=</span> <span class="n">battery_discharge</span><span class="p">(</span><span class="n">set_discharge</span><span class="p">,</span> <span class="n">battery_level</span><span class="p">)</span>   <span class="c1"># discharge cycle</span>
+            <span class="n">pub</span><span class="o">.</span><span class="n">publish</span><span class="p">(</span><span class="n">battery</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+            <span class="k">if</span> <span class="n">battery</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="c1"># the battery level is low</span>
-                <span class="n">battery_status</span> <span class="o">=</span> <span class="n">battery_recharge</span><span class="p">(</span><span class="n">battery_level</span><span class="p">)</span> <span class="c1"># recharge cycle</span>
-                <span class="n">pub</span><span class="o">.</span><span class="n">publish</span><span class="p">(</span><span class="n">battery_status</span><span class="p">)</span>
+                <span class="n">reset_goal</span><span class="p">()</span>
+                <span class="n">set_discharge</span> <span class="o">=</span> <span class="mi">1</span> <span class="c1"># flag that change the discharge mode, set to energy saving</span>
+                <span class="n">battery</span> <span class="o">=</span> <span class="n">battery_discharge</span><span class="p">(</span><span class="n">set_discharge</span><span class="p">,</span> <span class="n">battery</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>   <span class="c1"># discharge cycle</span>
+                <span class="k">if</span> <span class="n">sync_recharge</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="c1"># the robot is in the recharging station, room E</span>
+                    <span class="n">battery</span> <span class="o">=</span> <span class="n">battery_recharge</span><span class="p">(</span><span class="n">battery</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="c1"># recharge cycle</span>
+                    <span class="n">pub</span><span class="o">.</span><span class="n">publish</span><span class="p">(</span><span class="n">battery</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
 
         <span class="k">else</span><span class="p">:</span>
             <span class="c1"># the world is not yet loaded in the FSM</span>

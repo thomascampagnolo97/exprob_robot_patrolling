@@ -98,35 +98,6 @@ class Helper:
             self.battery_status = 1
 
         return self.battery_status
-    
-    def path_planning(self, listNow, listDes, robPos):
-        """
-        This method is needed to plan the path from one position to another, recursively scanning the list of reachable point for the robot 
-        and the connected area to the desired position.
-
-        Args
-            self: instance of the current class
-            l1: the list of string from querying the *connectedTo* data property of the actual robot position
-            l2: the list of string from querying the *connectedTo* data property of the desired robot location
-            robPos: the actual robot position in the moment the function is called for checking operation
-        
-        Returns
-            self.shared_location: the shared location between the two lists
-
-        """
-
-        #global shared_location
-
-        for i in listNow:
-            for j in listDes:
-                if i == j :
-                    self.shared_location = i
-                elif robPos == j:
-                    self.shared_location = robPos
-                else:
-                    self.shared_location = ''
-
-        return self.shared_location
 
     def time_set(self, timeList):
         """
@@ -255,28 +226,85 @@ class Helper:
 
     def go_to_coordinate(self, coor):
         """
-        The :func:go_to_coordinate function moves the robot to the specified coordinates by calling the get_coordinate service. If the service returns that the target coordinates have been reached, the function returns 1. If the target coordinates have not been reached, the function calls itself again to try moving to the target coordinates again.
+        Method that moves the robot to the specified coordinates by calling the ``/get_coordinate`` service. If the service 
+        returns that the target coordinates have been reached, the function returns ``1``. If the target coordinates have not 
+        been reached, the function calls itself again to try moving to the target coordinates again.
 
         Args:
             - coor: A string representing the key for the desired coordinates in the global dictionary coordinates.
         
         Returns:
-            - response.return: An integer indicating whether the target coordinates have been reached (1) or not (0).
+            - response.return: An integer indicating whether the target coordinates have been reached ``1`` or not ``0``.
 
         """
 
-        get_coordinate = rospy.ServiceProxy('/get_coordinate', GetCoordinates)
         rospy.wait_for_service('/get_coordinate')
+        get_coordinate = rospy.ServiceProxy('/get_coordinate', GetCoordinates)
 
         response = get_coordinate(self.coordinates[coor]['X'] , self.coordinates[coor]['Y'])
+        # print(response)
         if response.return_ == 1:
-            print('Location reached')
+            print('Location successfully reached!')
         else:
-            print('Location not reached')
+            print('Attention, location not reached!')
             self.go_to_coordinate(coor)
         return response.return_
+    
+    def room_dictionary(self):
+        """
+        Method that initializes the global variable ``coordinates`` as a dictionary containing 
+        the X and Y coordinates for each room in the list ``rooms``. The function does this by calling 
+        the ArmorClient and using the ``QUERY`` command to retrieve the X and Y coordinates for each room 
+        from the ontology. The function then adds the room's X and Y coordinates to the coordinates dictionary.
+
+        """
+
+        client = ArmorClient("example", "ontoRef")
+
+        self.rooms = ['R1', 'R2', 'R3', 'R4', 'C1', 'C2', 'E']
+        
+        for i in self.rooms:
+            self.req=client.call('QUERY','DATAPROP','IND',['X_point', i])
+            X=float(self.extract_value(self.req.queried_objects))
+            self.req=client.call('QUERY','DATAPROP','IND',['Y_point', i])
+            Y=float(self.extract_value(self.req.queried_objects))
+            self.coordinates[i] = {'X': X, 'Y': Y}
+        return self.coordinates
+
+    def extract_value(self, input_list):
+        """
+        Method to rewrite the queried time stamp or coordinate, deleting the not digit part of the string, for both Rooms and Robot's data property
+
+        Args
+            - input_list: list of queried objects section of the Armor service message
+        
+        Returns
+            all the element between the double quotes
+        
+        """
+
+        # Extract the string value from the list
+        self.value_string = input_list[0]
+        # Remove the surrounding quotation marks and the xsd:float type indicator
+        self.stripped_string = self.value_string[1:-1].split("^^")[0]
+        # Remove any surrounding quotation marks
+        self.stripped_string = self.stripped_string.strip('"')
+        # Convert the string to a float and return it
+        return float(self.stripped_string)
 
     def common_connection(self, list1, list2):
+        """
+        Method that returns the common value between the two lists.
+
+        Args
+            - list1: list 1 of rooms 
+            - list2: list 2 of rooms
+        
+        Returns
+            The common value (common room between the two lists)
+        
+        """
+
         for self.string in list1:
             if self.string in list2:
                 return self.string
@@ -285,24 +313,21 @@ class Helper:
         """
         Method used when the Robot has to change its position in the environment.
         
-        This is the main function that define the motion of the robot in the map and takes the help of three other functions 
+        This is the main function that define the motion of the robot in the map and takes the help of other functions:
             - ``rooms_search``; 
-            - ``path_planning``; 
+            - ``common_connection``;
+            - ``robot_location``;
+            - ``go_to_coordinate``;
             - ``time_set``.
 
         Args
             self: instance of the current class
-            robPos: is the actual robot position when this function is called
             desPos: is the desired robot position
         
         Returns
             robot_position: the updated robot position at the end of the movement, when the location is changed
 
         """
-
-        #global shared_location
-        #global urgent_rooms
-        #global robot_position
         
         # client commands of the armor_api
         client = ArmorClient("example", "ontoRef")

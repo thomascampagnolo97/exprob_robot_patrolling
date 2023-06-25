@@ -2,14 +2,15 @@
 """
 .. module:: battery
     :platform: Unix
-    :synopsis: Python code to change the battery level
+    :synopsis: Python code that descrive the behaviour of the battery. DIscharge and recharge cycles.
 
 .. moduleauthor:: Thomas Campagnolo <s5343274@studenti.unige.it>
 
 ROS node which defines the behavior of the robot battery. This node simulate quite realistically the battery discharge 
 and charge cycles with the use of a counter variable ``battery_level`` and the time parameters ``time_discharge`` and ``time_recharge``.
-If the battery is fully charged, the ``battery_status`` is published to ``1``. If instead the battery level is below the minimum threshold 
-then ``battery_status`` is ``0``. Depending on this, the :mod:`fsm_behaviour` changes its execution between ``RECHARGING`` state and all the others states.
+If the battery is fully charged, the ``battery_status`` is published to ``1``. If instead the battery level is below the threshold 
+then ``battery_status`` is ``0``, indicating that the battery is low on charge. For this reason, the :mod:`fsm_behaviour` changes its 
+execution between all the others states to ``MOVE2RECHARGING`` and  ``RECHARGING`` states.
 
 Publishes to:
     /battery_signal: a boolean flag to communicate when battery is low and when is totally charged
@@ -17,6 +18,7 @@ Publishes to:
 Subscribes  to:
     /world_battery_sync: a Boolean flag for synchronization reasons with the :mod:`fsm_behaviour` node. When the world is correctly loaded
     the battery's functionality start its execution.
+    /start_recharging: a boolean flag used to indicate that the robot is in the recharging station and therefore the battery recharging cycle can begin.
 """
 
 import rospy
@@ -34,12 +36,13 @@ from exprob_robot_patrolling import architecture_name_mapper as anm
 
 # Global parameters that define time informations
 time_recharge = 0.1     # recharge time of a single step
-time_discharge = 4.0    # discharge time of a single step
+time_discharge = 5.0    # discharge time of a single step (first cycle)
 
-sync_status = 0  # flag for sync with the world
+sync_status = 0     # flag for sync with the world
+sync_recharge = 0   # flag for sync with the correct robot position (the robot is in the recharging station, room E)
 
 battery_level = anm.BATTERY_CAPACITY # initial and max battery capacity
-threshold = 10   # minimum battery charge threshold
+threshold = 30   # minimum battery charge threshold, notify the low battery level
 
 
 def sync_callback(data):
@@ -57,30 +60,71 @@ def sync_callback(data):
         sync_status = 1
 
 
-
-def battery_discharge(level):
+def recharge_callback(data):
+    """ 
+    Callback function for the fsm publisher ``/start_recharging``, that modifies the value of the global variable ``sync_recharge`` 
+    and will let the recharging cycle begins. 
+    
     """
-    This function defines the battery discharge cycle. Starting from the maximum capacity (``BATTERY_CAPACITY``), 
-    the level is decreased in steps of 2 for each discharge time parameter.
+
+    global sync_recharge
+
+    if data.data == 0:
+        sync_recharge = 0
+
+    elif data.data == 1:
+        sync_recharge = 1
+
+
+
+def battery_discharge(set_flag, level):
+    """
+    This function defines the battery discharge cycle. In general, the execution start from the maximum capacity (``BATTERY_CAPACITY``). 
+    The level is decreased in steps of 2 for each discharge time parameter.
     If the level reaches values lower than or equal to the minimum charge ``threshold``, the ``battery_status`` is set to ``0``. 
-    This indicates that the battery is low and must be recharged.
+    This indicates that the battery is low and the robot must move towards the charging station, room E.
+    While moving towards this position, the discharge cycle parameters are modified in order to continue the discharge of the 
+    battery starting from the current charge level and the discharge time is longer to allow the robot to reach room E to recharge 
+    the battery (behavior like energy saving).
+    If the synchronization flag with recharging ``sync_recharge`` is ``1`` this means that the robot has reached the recharging 
+    station and therefore the discharge cycle is interrupted to allow the robot to recharge.
+
 
     Args:
-        level: counter variable that simulates the dynamic level of the battery during the cycle
+        - set_flag: flag that sets the discharge mode, standard or energy saving
+        - level: counter variable that simulates the dynamic level of the battery during the cycle
 
     Returns:
-        battery_status: the battery flag
+        - battery_status: the battery flag
+        - level: actual battery level
 
     """
 
-    for level in range(anm.BATTERY_CAPACITY, -2, -2):
+    rospy.Subscriber(anm.TOPIC_START_CHARGE_BATTERY, Bool, recharge_callback) 
+
+    # General parameters for standard discharge cycle 
+    if set_flag == 0:
+        actual_battery_level = anm.BATTERY_CAPACITY
+        threshold = 30
+        time_discharge = 5.0
+    # Energy saving parameters, the robot should reach the recharging station
+    elif set_flag == 1:
+        actual_battery_level = level
+        threshold = 0
+        time_discharge = 8.0
+
+    for level in range(actual_battery_level, -2, -2):
         print("Battery level: ", level)
 
         rospy.sleep(time_discharge)
     
         if level <= threshold:
             battery_status = 0
-            return battery_status
+            return battery_status, level
+        
+        if sync_recharge == 1:
+            battery_status = 0
+            return battery_status, level
 
 
 def battery_recharge(level):
@@ -94,24 +138,26 @@ def battery_recharge(level):
         level: counter variable that simulates the dynamic level of the battery during the cycle
 
     Returns:
-        battery_status: the battery flag
+        - battery_status: the battery flag
+        - level: actual battery level
         
     """
 
-    for level in range(threshold, anm.BATTERY_CAPACITY+1, 2):
+    for level in range(level, anm.BATTERY_CAPACITY+1, 2):
         print("Battery level recharged: ", level)
         rospy.sleep(time_recharge)
 
         if level == anm.BATTERY_CAPACITY:
             battery_status = 1
-            return battery_status
+            return battery_status, level
 
 
 def reset_goal():
     """
-    Cancels any existing goals using the Action client for the `move_base` action server
+    Function that cancels any existing goals using the Action client for the ``move_base`` action server
  
     """
+
     # Action client
     client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
     # Wait for the action server 
@@ -121,8 +167,7 @@ def reset_goal():
 
 def main_battery_behaviour():
     """
-    Function that define the battery behaviourTOPIC_REPEAT_DETECTION_ARUCO = 'repeat_detection_aruco'
- with the initialization of the battery node.
+    Function that define the battery behaviour with the initialization of the battery node.
     For synchronization with the FSM, this funcionality start its execution when :mod:`world_callback` returns ``1``, advertised by :mod:`fsm_behaviour` node.
     The boolean value of the battery to the state ``battery_status`` is advertised by :mod:`battery_discharge` and :mod:`battery_recharge`,
     and published in the dedicated topic.
@@ -134,19 +179,28 @@ def main_battery_behaviour():
     rospy.Subscriber(anm.TOPIC_SYNC_WORLD_BATTERY, Bool, sync_callback)    # subscriber world flag for sync
     pub = rospy.Publisher(anm.TOPIC_BATTERY_SIGNAL, Bool, queue_size=10)    # publisher of the battery status flag
 
+    rospy.Subscriber(anm.TOPIC_START_CHARGE_BATTERY, Bool, recharge_callback)    # subscriber world flag for sync
+
+
     while not rospy.is_shutdown():
 
         if sync_status == 1:
             # the world is loaded in the FSM, the battery behaviour starts its execution
-            # The battery charge is higher than the min threshold 
-            battery_status = battery_discharge(battery_level)   # discharge cycle
-            pub.publish(battery_status)
+            # The battery charge is higher than the min threshold
 
-            if battery_status == 0:
+            set_discharge = 0 #standard discharge cycle
+            battery = battery_discharge(set_discharge, battery_level)   # discharge cycle
+            pub.publish(battery[0])
+
+            if battery[0] == 0:
+                # the battery level is low
                 reset_goal()
-                rospy.sleep(50.0)
-                battery_status = battery_recharge(battery_level) # recharge cycle
-                pub.publish(battery_status)
+                set_discharge = 1 # flag that change the discharge mode, set to energy saving
+                battery = battery_discharge(set_discharge, battery[1])   # discharge cycle
+                if sync_recharge == 1:
+                    # the robot is in the recharging station, room E
+                    battery = battery_recharge(battery[1]) # recharge cycle
+                    pub.publish(battery[0])
 
 
         else:

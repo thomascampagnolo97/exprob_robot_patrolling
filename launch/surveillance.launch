@@ -37,4 +37,9 @@
             launch-prefix="xterm -e"
        > </node>
 
+      <node pkg = "exprob_robot_patrolling"  
+            type = "room_scan.py"
+            name = "room_scan"
+       > </node>
+
 </launch>

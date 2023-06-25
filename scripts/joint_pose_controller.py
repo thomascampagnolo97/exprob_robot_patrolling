@@ -1,15 +1,26 @@
 #!/usr/bin/env python
 """
-.. module:: joint_pose_modifier
+.. module:: joint_pose_controller
    :platform: Unix
-   :synopsis: Script to move the arm
+   :synopsis: Python code to control the joints of the arm
 .. moduleauthor:: Thomas Campagnolo <s5343274@studenti.unige.it>
 
-The purpose of this script is to control the joint of a robot and move it to a desired position. 
-It does this by publishing commands to the topic "myRob/joint1_position_controller/command" and 
-subscribing to the topic "myRob/joint1_position_controller/state" to monitor the joint's position. 
-This allows the script to issue successive commands based on the current position of the robot's joint.
+The purpose of this script is to control the joints of the robot arm to the desired position. 
+To do that, it publishes commands to the topic "robot_patrolling_explorer/joint*_position_controller/command" and 
+subscribes to the topic "robot_patrolling_explorer/joint*_position_controller/state" to monitor the joint's position.
 
+The implemented control of the joints allows the robot arm to perform a movement such as to be able to detect and scan 
+all the markers in order to build the ontology and the map of the environment.
+
+Publishes to:
+    /robot_patrolling_explorer/joint1_position_controller/command: joint 1 command
+    /robot_patrolling_explorer/joint2_position_controller/command: joint 2 command
+    /robot_patrolling_explorer/joint3_position_controller/command: joint 3 command
+
+Subscribes  to:
+    /robot_patrolling_explorer/joint1_position_controller/state: joint 1 control state
+    /robot_patrolling_explorer/joint2_position_controller/state: joint 2 control state
+    /robot_patrolling_explorer/joint3_position_controller/state: joint 3 control state
 """
 
 # Import necessary libraries
@@ -17,13 +28,16 @@ import rospy
 from control_msgs.msg import JointControllerState
 from std_msgs.msg import Float64
 
+# Import constant name defined to structure the architecture
+from exprob_robot_patrolling import architecture_name_mapper as anm
+
 
 value_joint1 = 0.0
 value_joint2 = 0.0
 
 def callback_joint1(msg):
     """
-    Callback function for the joint position.
+    Callback function for the joint1 position.
     
     Args:
         - JointControllerState 
@@ -33,7 +47,7 @@ def callback_joint1(msg):
 
 def callback_joint2(msg):
     """
-    Callback function for the joint position.
+    Callback function for the joint2 position.
     
     Args:
         - JointControllerState 
@@ -44,7 +58,7 @@ def callback_joint2(msg):
 
 def callback_joint3(msg):
     """
-    Callback function for the joint position.
+    Callback function for the joint3 position.
     
     Args:
         - JointControllerState 
@@ -59,25 +73,24 @@ def callback_joint3(msg):
 def joint_action():
     # Create ROS node
     """"
-    This function controls the commands passed to the joints. Joint 1 will rotate 360 degrees to scan the room."
+    This function controls the commands passed to the joints. Joint 1,2 and 3 will rotate to scan the room."
     
     Raises: 
         - ROSInterruptException
     
     """
     
-    rospy.init_node('joint_pose_modifier', anonymous = True)
-    joint1_pose_pub = rospy.Publisher('/robot_patrolling_explorer/joint1_position_controller/command', Float64, queue_size=10)
-    rospy.Subscriber("/robot_patrolling_explorer/joint1_position_controller/state", JointControllerState, callback_joint1)
-    # print("Init value of joint 1: ", value_joint1)
-    # #joint1_pose_pub.publish(-3.14)
+    rospy.init_node(anm.NODE_JOINTS_CONTROL, anonymous = True)
 
-    joint2_pose_pub = rospy.Publisher('/robot_patrolling_explorer/joint2_position_controller/command', Float64, queue_size=10)
-    rospy.Subscriber("/robot_patrolling_explorer/joint2_position_controller/state", JointControllerState, callback_joint2)
+    joint1_pose_pub = rospy.Publisher(anm.TOPIC_JOINT1_COMMAND, Float64, queue_size=10)
+    rospy.Subscriber(anm.TOPIC_JOINT1_STATE, JointControllerState, callback_joint1)
 
-    joint3_pose_pub = rospy.Publisher('/robot_patrolling_explorer/joint3_position_controller/command', Float64, queue_size=100)
-    rospy.Subscriber("/robot_patrolling_explorer/joint3_position_controller/state", JointControllerState, callback_joint3)
-    
+    joint2_pose_pub = rospy.Publisher(anm.TOPIC_JOINT2_COMMAND, Float64, queue_size=10)
+    rospy.Subscriber(anm.TOPIC_JOINT2_STATE, JointControllerState, callback_joint2)
+
+    joint3_pose_pub = rospy.Publisher(anm.TOPIC_JOINT3_COMMAND, Float64, queue_size=100)
+    rospy.Subscriber(anm.TOPIC_JOINT3_STATE, JointControllerState, callback_joint3)    
+
     while value_joint1 > -3.099:
         print("Value of joint 1: ", value_joint1)
         joint1_pose_pub.publish(-3.14)
@@ -102,18 +115,11 @@ def joint_action():
             joint1_pose_pub.publish(-1.60)
             joint3_pose_pub.publish(0.33)
 
-
-    
     joint1_pose_pub.publish(0.0)
     joint2_pose_pub.publish(0.0)
     joint3_pose_pub.publish(-0.25)
-
-
-    rospy.sleep(5)
-
-    
-    
-    #print("Final value of joint 1: ", value_joint1)
+        
+    rospy.sleep(0.5)
 
 
 if __name__ == '__main__':

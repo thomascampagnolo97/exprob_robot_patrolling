@@ -13,6 +13,9 @@ The 2D environment is composed by:
     - 2 corridors (C1, C2);
     - 1 special room (E), this is the charge location and also the init location;
     - 7 doors (D1, D2, D3, D4, D5, D6, D7).
+
+The name of the rooms, the respective information and the relationships between them, 
+are extracted from the initial reading of the markers.
    
 Publishes to:
     /world_loading: a boolean flag to communicate when the environment is created
@@ -180,15 +183,15 @@ def build_world():
 
 def marker_reader():
     """
-    ROS Node to read the data from the subscribed topic '/marker_publisher/target' and extract the markers' ids. 
-    When all the markers are detected, the node will shutdown the marker_publisher node, publish a boolean flag to the '/loader' topic 
-    and call the function :mod:load_std_map.
+    ROS Node to read the data from the subscribed topic ``/marker_publisher/target`` and extract the markers' IDs. 
+    When all the markers are detected, the node will shutdown the marker_publisher node, publish a boolean flag to the '/world_loading' topic 
+    and call the function ``build_world``.
 
     Subscribes to:
-        - '/marker_publisher/target' a string containing the detected markers' ids.
+        - /marker_publisher/target: a string containing the markers' IDs.
 
     Publishes to:
-        - '/loader' a boolean flag to communicate when the map is ready to be built.
+        - /world_loading: a boolean flag to communicate when the map is ready to be built.
 
     """
 
@@ -200,20 +203,18 @@ def marker_reader():
     sub = rospy.Subscriber("/marker_publisher/target", String, extract_aruco)
 
     generation = 0
-
     
     while not rospy.is_shutdown():
         if generation == 0:
             if len(markers_list)>=7:
-                print("ALL MARKERS DETECTED")
+                print("All Markers detected!")
                 sub.unregister()
                 build_world()
                 generation = 1
 
         else:
             pub.publish(True)
-            #rospy.sleep(10)
-            #rospy.signal_shutdown(anm.NODE_WORLD_GENERATOR)  
+              
 
 if __name__ == '__main__':
 
