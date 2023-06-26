@@ -62,7 +62,7 @@ The urgency of one location is determined by computing the difference between th
 
 Robot Model
 --------------------------
-The robot used in this project is a four-wheeled mobile robot. The robot is equipped with a laser sensor placed at its front to detect the environment and possible obstacles around it. The robot has also an arm with a camera mounted at the top, used for surveillance and detection purposes. The arm is made up of 3 rotational joints that allow the robot to perform different movements so that the camera can tilt getting a better view of the surroundings.
+The robot used in this project is a four-wheeled mobile robot. The robot is equipped with a laser sensor placed at its front to detect the environment and possible obstacles around it. The robot has also an arm with a camera mounted at the top, used for surveillance and detection purposes. The arm is made up of 2 rotational joints and 1 translational joint that allow the robot to perform different movements so that the camera can tilt and raise/lower getting a better view of the surroundings.
 
 Here the representation of the robot model as long as it performs marker detection:
 ![marker_scan_robot](https://github.com/thomascampagnolo97/exprob_robot_patrolling/assets/92585673/0a92afbd-4ddf-4585-98a0-4a00843faac9)
