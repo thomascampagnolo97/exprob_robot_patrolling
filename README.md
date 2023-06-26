@@ -5,7 +5,7 @@ Second ROS-based assignment for the Experimental Robotics Laboratory course at [
 
 Introduction
 -----------------
-This repository contains a software architecture ROS package for a surveillance robot menaged by a finite state machine, which builds the ontology and defines states to describe the robot's behavior. The architecture is described in the following sections.
+This repository is an upgrade of the [first assignment](https://github.com/thomascampagnolo97/exprob_surveillance.git) for the Experimental Robotics Laboratory course and it contains a software architecture ROS package for a surveillance robot menaged by a finite state machine, which builds the ontology and defines states to describe the robot's behavior. The architecture is described in the following sections.
 The programming language used to develop this package is Python3 and several tools are also used, including:
 1. [SMACH tool](http://wiki.ros.org/smach), to define the finite state machine;
 2. [SMACH viewer](http://wiki.ros.org/smach_viewer), as debugging tool to see the states, transitions and behavior of the FSM in a graphical way;
@@ -19,13 +19,16 @@ The [project documentation](https://thomascampagnolo97.github.io/exprob_robot_pa
 
 https://github.com/thomascampagnolo97/exprob_robot_patrolling/assets/92585673/5fe7cbe8-9317-479e-923d-ed6ae28bec9e
 
-In the following video there is the running code. The video consists of several clips and has been sped up compared to simulating real code (it is slow and depends on the CPU performance of your PC).
+In the video there is the running code. The video consists of several clips and has been sped up compared to simulating real code (it is slow and depends on the CPU performance of your PC).
 
 In the main terminal, on the left, we can see the execution of the `assignment.launch` and `surveillance.launch` files. The first starts the nodes needed for the simulation in Rviz and Gazebo while the second starts the rest of the nodes in the package. The Finite State Machine shows each transition from one state to another to achieve the desired behavior of the scenario. On the right four xterm windows are displayed corresponding to the battery behavior, world generation, robot motion with goal position coordinates and the ARMOR service.
+
+As we can see at the end of the video, it may happen that the `location not reached` message is displayed, this is because the time required to reach the target position has been exceeded. In the presence of this event, the `robot_motion` node sends the same coordinates again in order to reach the goal.
 
 The representation in Rviz shows how the environment is scanned by the laser scan and how the map and path planning are generated.
 
 In the global options in Rviz remember to set the Fixed Frame to `map`.
+
 All the instructions for installing and running the package are described in the dedicated section below.
 
 Scenario Description
@@ -91,11 +94,11 @@ This repository contains a ROS package named `exprob_robot_patrolling` that incl
  - [package.xml](package.xml): File to configure this package.
  - [setup.py](setup.py): File to `import` python modules from the `utilities` folder into the files in the `script` folder.
  - [config/](config/): Contains the files for configuring the system.
-    - [base_local_planner_params.yaml](config/base_local_planner_params.yaml)
-    - [costmap_common_params.yaml](config/costmap_common_params.yaml)
-    - [global_costmap_params.yaml](config/global_costmap_params.yaml)
-    - [local_costmap_params.yaml](config/local_costmap_params.yaml)
-    - [move_base_params.yaml](config/move_base_params.yaml)
+    - [base_local_planner_params.yaml](config/base_local_planner_params.yaml): Configuration parameters of base local planner
+    - [costmap_common_params.yaml](config/costmap_common_params.yaml): Configuration parameters of costmap
+    - [global_costmap_params.yaml](config/global_costmap_params.yaml): Configuration parameters of global costmap
+    - [local_costmap_params.yaml](config/local_costmap_params.yaml): Configuration parameters of local costmap
+    - [move_base_params.yaml](config/move_base_params.yaml): Configuration parameters of move base
     - [differential_controller.yaml](config/differential_controller.yaml): Configuration of the controllers for the robot's joints.
     - [sim_robot.rviz](config/sim_robot.rviz): Configuration of the rviz simulation.
  - [launch/](launcher/): Contains the configuration to launch this package.
