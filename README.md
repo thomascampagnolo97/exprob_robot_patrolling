@@ -17,6 +17,16 @@ Finally, the whole architecture depends from the [aRMOR service](https://github.
 
 The [project documentation](https://thomascampagnolo97.github.io/exprob_robot_patrolling/), written in Sphinx, is available to this link.
 
+https://github.com/thomascampagnolo97/exprob_robot_patrolling/assets/92585673/5fe7cbe8-9317-479e-923d-ed6ae28bec9e
+
+In the following video there is the running code. The video consists of several clips and has been sped up compared to simulating real code (it is slow and depends on the CPU performance of your PC).
+
+In the main terminal, on the left, we can see the execution of the `assignment.launch` and `surveillance.launch` files. The first starts the nodes needed for the simulation in Rviz and Gazebo while the second starts the rest of the nodes in the package. The Finite State Machine shows each transition from one state to another to achieve the desired behavior of the scenario. On the right four xterm windows are displayed corresponding to the battery behavior, world generation, robot motion with goal position coordinates and the ARMOR service.
+
+The representation in Rviz shows how the environment is scanned by the laser scan and how the map and path planning are generated.
+
+In the global options in Rviz remember to set the Fixed Frame to `map`.
+All the instructions for installing and running the package are described in the dedicated section below.
 
 Scenario Description
 --------------------------
@@ -220,14 +230,6 @@ If the user wants to see the transitions between the states, the SMACH viewer to
 ```bash
 rosrun smach_viewer smach_viewer.py 
 ```
-
-Package execution and video
-------------------------
-https://github.com/thomascampagnolo97/exprob_robot_patrolling/assets/92585673/5fe7cbe8-9317-479e-923d-ed6ae28bec9e
-
-In the main terminal, on the left, it is visible the execution of the `fsm_behaviour.py` node. This node implements the Finite State Machine and shows every transition from one state to another to achieve the desired behavior of the program. 
-On the right, three xterm windows appear once the program is launched. The window at the top is shows the messages given by the aRMOR service. The one in the middle represents the `battery.py` node and shows the battery's level during the discharge and recharge cycle's and is responsible for generating the battery flag to signal when the battery is low. Finally, the one at the bottom is the `world_generator.py` and is responsible for generating the environment and publish the world flag.
-
 
 Working hypothesis and environment
 --------------------------------------
