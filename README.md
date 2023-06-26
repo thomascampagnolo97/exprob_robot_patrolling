@@ -223,7 +223,7 @@ rosrun smach_viewer smach_viewer.py
 
 Package execution and video
 ------------------------
-https://github.com/thomascampagnolo97/exprob_surveillance/assets/92585673/e6ce4a0e-3907-4520-896b-5c83a049bccf
+https://github.com/thomascampagnolo97/exprob_robot_patrolling/assets/92585673/5fe7cbe8-9317-479e-923d-ed6ae28bec9e
 
 In the main terminal, on the left, it is visible the execution of the `fsm_behaviour.py` node. This node implements the Finite State Machine and shows every transition from one state to another to achieve the desired behavior of the program. 
 On the right, three xterm windows appear once the program is launched. The window at the top is shows the messages given by the aRMOR service. The one in the middle represents the `battery.py` node and shows the battery's level during the discharge and recharge cycle's and is responsible for generating the battery flag to signal when the battery is low. Finally, the one at the bottom is the `world_generator.py` and is responsible for generating the environment and publish the world flag.
